@@ -12,184 +12,577 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 25%, #2d2d5a 50%, #1a1a3a 75%, #0f0f23 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: white;
             height: 100vh;
             overflow: hidden;
-            position: relative;
         }
 
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            25% { background-position: 100% 50%; }
-            50% { background-position: 100% 100%; }
-            75% { background-position: 0% 100%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Animated background particles */
-        .bg-particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: rgba(118, 185, 0, 0.6);
-            border-radius: 50%;
-            animation: float 20s infinite linear;
-        }
-
-        @keyframes float {
-            0% {
-                transform: translateY(100vh) translateX(0px);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-100px) translateX(100px);
-                opacity: 0;
-            }
-        }
-
-        .chat-container {
-            width: 100%;
+        .app-container {
+            display: flex;
             height: 100vh;
+            background: #0a0a0a;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #1a1a1a;
+            border-right: 1px solid #333;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .app-logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #76b900, #9acd32);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .app-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .menu-toggle {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+        }
+
+        .search-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .search-input {
+            width: 100%;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            color: white;
+        }
+
+        .search-input::placeholder {
+            color: #888;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 0;
+        }
+
+        .folder-section {
+            margin-bottom: 24px;
+        }
+
+        .folder-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px 8px 20px;
+            font-size: 14px;
+            color: #888;
+            font-weight: 500;
+        }
+
+        .folder-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .folder-action {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px;
+        }
+
+        .folder-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 20px;
+            margin: 2px 0;
+            cursor: pointer;
+            border-radius: 0;
+            transition: background 0.2s;
+        }
+
+        .folder-item:hover {
+            background: #2a2a2a;
+        }
+
+        .folder-item.active {
+            background: #333;
+            border-left: 3px solid #76b900;
+        }
+
+        .folder-icon {
+            font-size: 16px;
+            color: #888;
+        }
+
+        .folder-name {
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        .folder-menu {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .folder-item:hover .folder-menu {
+            opacity: 1;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 20px;
+            margin: 2px 0;
+            cursor: pointer;
+            border-radius: 0;
+            transition: background 0.2s;
+        }
+
+        .chat-item:hover {
+            background: #2a2a2a;
+        }
+
+        .chat-item.active {
+            background: #333;
+            border-left: 3px solid #76b900;
+        }
+
+        .chat-avatar {
+            width: 20px;
+            height: 20px;
+            background: #444;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .chat-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-title {
+            font-size: 14px;
+            color: #ddd;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .chat-preview {
+            font-size: 12px;
+            color: #888;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .chat-menu {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+        }
+
+        .chat-item:hover .chat-menu {
+            opacity: 1;
+        }
+
+        .new-chat-btn {
+            margin: 16px 20px 0 20px;
+            background: #76b900;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: #5a9000;
+        }
+
+        /* Main Chat Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0a0a0a;
             position: relative;
         }
 
         .chat-header {
-            background: rgba(20, 20, 40, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(118, 185, 0, 0.3);
+            padding: 16px 24px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #111;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #2a2a2a;
+        }
+
+        .chat-title-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-title-main {
+            font-size: 16px;
+            font-weight: 600;
             color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
         }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        .chat-status {
+            background: #1a5c1a;
+            color: #4ade80;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
         }
 
-        .logo {
+        .chat-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-action {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .chat-action:hover {
+            background: #2a2a2a;
+        }
+
+        .chat-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+            background: #0a0a0a;
+        }
+
+        .welcome-container {
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .welcome-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #76b900, #9acd32);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 36px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .welcome-title {
             font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
             background: linear-gradient(135deg, #76b900, #9acd32);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .header-info h1 {
-            font-size: 28px;
-            margin-bottom: 5px;
-            background: linear-gradient(135deg, #ffffff, #e0e0e0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .welcome-subtitle {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 40px;
+            line-height: 1.5;
         }
 
-        .header-info p {
-            opacity: 0.8;
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .quick-action {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .quick-action:hover {
+            background: #2a2a2a;
+            border-color: #76b900;
+            transform: translateY(-2px);
+        }
+
+        .quick-action-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+            color: #76b900;
+        }
+
+        .quick-action-title {
             font-size: 14px;
-            color: #b0b0b0;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 8px;
         }
 
-        .header-controls {
+        .quick-action-desc {
+            font-size: 12px;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        .input-section {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .input-tabs {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+
+        .input-tab {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 8px 0;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .input-tab.active {
+            color: #76b900;
+        }
+
+        .input-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #76b900;
+        }
+
+        .input-container {
+            position: relative;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .input-container:focus-within {
+            border-color: #76b900;
+        }
+
+        .input-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #76b900, #9acd32);
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
         }
 
-        .status-indicator {
+        .input-field {
+            flex: 1;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            resize: none;
+            min-height: 24px;
+            max-height: 120px;
+            outline: none;
+        }
+
+        .input-field::placeholder {
+            color: #888;
+        }
+
+        .input-actions {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(118, 185, 0, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(118, 185, 0, 0.4);
         }
 
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #76b900;
-            animation: pulse 2s infinite;
-        }
-
-        .clear-btn {
-            background: rgba(220, 38, 38, 0.2);
-            border: 1px solid rgba(220, 38, 38, 0.4);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+        .input-action {
+            background: none;
+            border: none;
+            color: #888;
             cursor: pointer;
+            font-size: 18px;
+            padding: 6px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .input-action:hover {
+            background: #2a2a2a;
+            color: white;
+        }
+
+        .send-btn {
+            background: #76b900;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #5a9000;
+        }
+
+        .send-btn:disabled {
+            background: #333;
+            cursor: not-allowed;
+        }
+
+        .disclaimer {
+            margin-top: 24px;
             font-size: 12px;
-            transition: all 0.3s ease;
+            color: #666;
+            text-align: center;
         }
 
-        .clear-btn:hover {
-            background: rgba(220, 38, 38, 0.3);
-            transform: scale(1.05);
-        }
-
-        .chat-messages {
+        .messages-container {
             flex: 1;
-            padding: 40px 20px;
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
+            padding: 24px 24px 0 24px;
+            display: none;
         }
 
-        .messages-wrapper {
-            width: 100%;
-            max-width: 900px;
+        .chat-input-area {
+            padding: 20px 24px;
+            border-top: 1px solid #333;
+            background: #111;
+            display: none;
+        }
+
+        .chat-input-container {
+            max-width: 800px;
             margin: 0 auto;
         }
 
         .message {
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             display: flex;
             align-items: flex-start;
-            gap: 15px;
-            animation: messageSlideIn 0.5s ease-out;
-        }
-
-        @keyframes messageSlideIn {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            gap: 12px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .message.user {
@@ -197,485 +590,444 @@
         }
 
         .message-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            color: white;
+            font-size: 16px;
             flex-shrink: 0;
-            position: relative;
-            overflow: hidden;
         }
 
         .message.user .message-avatar {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+            background: #2563eb;
         }
 
         .message.assistant .message-avatar {
-            background: linear-gradient(135deg, #76b900, #53af00);
-            box-shadow: 0 8px 32px rgba(118, 185, 0, 0.3);
-        }
-
-        .message-avatar::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+            background: linear-gradient(135deg, #76b900, #9acd32);
         }
 
         .message-content {
-            max-width: 75%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 20px 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            position: relative;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 16px 20px;
+            max-width: 70%;
+            border: 1px solid #333;
         }
 
         .message.user .message-content {
-            background: linear-gradient(135deg, #3b82f6, #1e40af);
-            color: white;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: #2563eb;
+            border-color: #2563eb;
         }
 
-        .context-indicator {
-            font-size: 12px;
-            color: #76b900;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-weight: 500;
+        .message-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: white;
         }
 
         .message-content pre {
-            background: #1e293b;
-            color: #e2e8f0;
-            padding: 20px;
-            border-radius: 12px;
+            background: #0a0a0a;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
             overflow-x: auto;
-            margin: 15px 0;
-            font-size: 14px;
-            border: 1px solid #334155;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+            font-size: 13px;
+            border: 1px solid #333;
         }
 
         .message-content code {
-            background: rgba(118, 185, 0, 0.1);
+            background: rgba(118, 185, 0, 0.2);
             color: #76b900;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
         }
 
-        .message.user .message-content code {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-
-        .chat-input-container {
-            padding: 30px 40px;
-            background: rgba(20, 20, 40, 0.95);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(118, 185, 0, 0.3);
-            position: sticky;
-            bottom: 0;
-            z-index: 100;
-        }
-
-        .chat-input-wrapper {
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .chat-input {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 2px solid rgba(118, 185, 0, 0.3);
-            border-radius: 25px;
-            padding: 15px 25px;
-            font-size: 16px;
-            color: white;
-            outline: none;
-            resize: none;
-            min-height: 56px;
-            max-height: 150px;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-
-        .chat-input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .chat-input:focus {
-            border-color: #76b900;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 20px rgba(118, 185, 0, 0.3);
-        }
-
-        .send-button {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #76b900, #53af00);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(118, 185, 0, 0.4);
-        }
-
-        .send-button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 25px rgba(118, 185, 0, 0.6);
-        }
-
-        .send-button:disabled {
-            background: rgba(255, 255, 255, 0.2);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #76b900;
-            font-style: italic;
-            font-weight: 500;
-        }
-
-        .typing-dots {
-            display: flex;
-            gap: 5px;
-        }
-
-        .typing-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #76b900;
-            animation: typing 1.4s infinite ease-in-out;
-        }
-
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0.5); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-
-        .welcome-message {
-            text-align: center;
-            color: white;
-            margin: 50px 0;
-            animation: fadeInUp 1s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            0% {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .welcome-message h3 {
-            font-size: 36px;
-            margin-bottom: 15px;
-            background: linear-gradient(135deg, #76b900, #9acd32);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .welcome-message p {
-            font-size: 18px;
-            opacity: 0.8;
-            margin-bottom: 30px;
-        }
-
-        .example-questions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 30px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .example-question {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(118, 185, 0, 0.3);
-            border-radius: 15px;
-            padding: 15px 20px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            color: white;
-            text-align: center;
-        }
-
-        .example-question:hover {
-            background: linear-gradient(135deg, #76b900, #53af00);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(118, 185, 0, 0.4);
-        }
-
-        .error-message {
-            background: rgba(220, 38, 38, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 15px 0;
-            backdrop-filter: blur(20px);
-        }
-
-        /* Custom scrollbar */
-        .chat-messages::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .chat-messages::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: rgba(118, 185, 0, 0.5);
-            border-radius: 10px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb:hover {
-            background: rgba(118, 185, 0, 0.8);
-        }
-
+        /* Mobile Responsive */
         @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .mobile-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                display: none;
+            }
+
+            .mobile-overlay.show {
+                display: block;
+            }
+
             .chat-header {
-                padding: 15px 20px;
-                flex-direction: column;
-                gap: 15px;
+                padding: 12px 16px;
             }
-            
-            .header-left {
-                width: 100%;
-                justify-content: center;
+
+            .chat-body {
+                padding: 20px 16px;
             }
-            
-            .logo {
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .input-tabs {
+                gap: 16px;
+            }
+
+            .welcome-title {
                 font-size: 24px;
             }
-            
-            .header-info h1 {
-                font-size: 20px;
-            }
-            
-            .message-content {
-                max-width: 90%;
-            }
-            
-            .chat-input-container {
-                padding: 20px 15px;
-            }
-            
-            .example-questions {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            
-            .welcome-message h3 {
+
+            .welcome-icon {
+                width: 60px;
+                height: 60px;
                 font-size: 28px;
             }
         }
 
-        @media (max-width: 480px) {
-            .message-avatar {
-                width: 40px;
-                height: 40px;
-                font-size: 16px;
-            }
-            
-            .message {
-                gap: 10px;
-            }
-            
-            .message-content {
-                padding: 15px 18px;
-                max-width: 85%;
-            }
+        /* Scrollbar Styling */
+        .sidebar-content::-webkit-scrollbar,
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track,
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb,
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover,
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #444;
         }
     </style>
 </head>
 <body>
-    <!-- Animated background particles -->
-    <div class="bg-particles" id="particles"></div>
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+    
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="app-logo">🚀</div>
+                <div class="app-title">CUDA Tutor</div>
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            </div>
 
-    <div class="chat-container">
-        <div class="chat-header">
-            <div class="header-left">
-                <div class="logo">🚀</div>
-                <div class="header-info">
-                    <h1>CUDA Tutor</h1>
-                    <p>Your AI assistant for GPU programming and CUDA optimization</p>
+            <div class="search-section">
+                <input type="text" class="search-input" placeholder="Search">
+            </div>
+
+            <div class="sidebar-content">
+                <div class="folder-section">
+                    <div class="folder-header">
+                        <span>Folders</span>
+                        <div class="folder-actions">
+                            <button class="folder-action">+</button>
+                            <button class="folder-action">⋯</button>
+                        </div>
+                    </div>
+                    
+                    <div class="folder-item active">
+                        <span class="folder-icon">📁</span>
+                        <span class="folder-name">CUDA Basics</span>
+                        <button class="folder-menu">⋯</button>
+                    </div>
+                    
+                    <div class="folder-item">
+                        <span class="folder-icon">📁</span>
+                        <span class="folder-name">Memory Optimization</span>
+                        <button class="folder-menu">⋯</button>
+                    </div>
+                    
+                    <div class="folder-item">
+                        <span class="folder-icon">📁</span>
+                        <span class="folder-name">Kernel Development</span>
+                        <button class="folder-menu">⋯</button>
+                    </div>
+                    
+                    <div class="folder-item">
+                        <span class="folder-icon">📁</span>
+                        <span class="folder-name">Performance Tuning</span>
+                        <button class="folder-menu">⋯</button>
+                    </div>
+                </div>
+
+                <div class="folder-section">
+                    <div class="folder-header">
+                        <span>Chats</span>
+                        <div class="folder-actions">
+                            <button class="folder-action">⋯</button>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-item active">
+                        <div class="chat-avatar">🤖</div>
+                        <div class="chat-content">
+                            <div class="chat-title">Getting Started with CUDA</div>
+                            <div class="chat-preview">Basic CUDA concepts and your first kernel...</div>
+                        </div>
+                        <button class="chat-menu">⋯</button>
+                    </div>
+                    
+                    <div class="chat-item">
+                        <div class="chat-avatar">📊</div>
+                        <div class="chat-content">
+                            <div class="chat-title">Memory Optimization Tips</div>
+                            <div class="chat-preview">Coalesced memory access patterns and shared memory usage...</div>
+                        </div>
+                        <button class="chat-menu">⋯</button>
+                    </div>
+                    
+                    <div class="chat-item">
+                        <div class="chat-avatar">⚡</div>
+                        <div class="chat-content">
+                            <div class="chat-title">Kernel Performance Analysis</div>
+                            <div class="chat-preview">Profiling tools and optimization strategies...</div>
+                        </div>
+                        <button class="chat-menu">⋯</button>
+                    </div>
                 </div>
             </div>
-            <div class="header-controls">
-                <div class="status-indicator">
-                    <div class="status-dot"></div>
-                    <span>Online</span>
-                </div>
-                <button class="clear-btn" onclick="clearConversation()">
-                    🗑️ Clear Chat
-                </button>
-            </div>
+
+            <button class="new-chat-btn" onclick="startNewChat()">
+                <span>+</span>
+                <span>New chat</span>
+            </button>
         </div>
 
-        <div class="chat-messages" id="chatMessages">
-            <div class="messages-wrapper">
-                <div class="welcome-message">
-                    <h3> Welcome to CUDA Tutor!</h3>
-                    <p>Ask me anything about CUDA programming, GPU optimization, or parallel computing.</p>
-                    
-                    <div class="example-questions">
-                        <div class="example-question" onclick="askQuestion('What is CUDA and why is it useful?')">
-                             What is CUDA?
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="chat-header">
+                <button class="back-btn" onclick="toggleSidebar()">←</button>
+                <div class="chat-title-section">
+                    <div class="chat-title-main">CUDA Tutor</div>
+                    <div class="chat-status">CUDA GPT 3.0</div>
+                </div>
+                <div class="chat-actions">
+                    <button class="chat-action" title="Share">📤</button>
+                    <button class="chat-action" title="Save">💾</button>
+                </div>
+            </div>
+
+            <div class="chat-body" id="chatBody">
+                <div class="welcome-container">
+                    <div class="welcome-icon">🚀</div>
+                    <h1 class="welcome-title">How can I help you today?</h1>
+                    <p class="welcome-subtitle">
+                        Ask me anything about CUDA programming, GPU optimization, or parallel computing.
+                        I'm here to help you master GPU development!
+                    </p>
+
+                    <div class="quick-actions">
+                        <div class="quick-action" onclick="askQuestion('What is CUDA and why is it useful?')">
+                            <div class="quick-action-icon">📚</div>
+                            <div class="quick-action-title">CUDA Basics</div>
+                            <div class="quick-action-desc">Learn the fundamentals of CUDA programming</div>
                         </div>
-                        <div class="example-question" onclick="askQuestion('How do I optimize memory access in CUDA kernels?')">
-                             Memory optimization
+                        
+                        <div class="quick-action" onclick="askQuestion('Show me a simple CUDA kernel example')">
+                            <div class="quick-action-icon">⚡</div>
+                            <div class="quick-action-title">Kernel Examples</div>
+                            <div class="quick-action-desc">Get started with your first CUDA kernel</div>
                         </div>
-                        <div class="example-question" onclick="askQuestion('Show me a simple CUDA kernel example')">
-                             Kernel example
+                        
+                        <div class="quick-action" onclick="askQuestion('How do I optimize memory access in CUDA?')">
+                            <div class="quick-action-icon">🧠</div>
+                            <div class="quick-action-title">Memory Optimization</div>
+                            <div class="quick-action-desc">Master efficient memory usage patterns</div>
                         </div>
-                        <div class="example-question" onclick="askQuestion('What are the best practices for CUDA programming?')">
-                             Best practices
+                        
+                        <div class="quick-action" onclick="askQuestion('What are the best practices for CUDA programming?')">
+                            <div class="quick-action-icon">🏆</div>
+                            <div class="quick-action-title">Best Practices</div>
+                            <div class="quick-action-desc">Professional CUDA development tips</div>
+                        </div>
+                    </div>
+
+                    <div class="input-section">
+                        <div class="input-tabs">
+                            <button class="input-tab active">All</button>
+                            <button class="input-tab">Text</button>
+                            <button class="input-tab">Image</button>
+                            <button class="input-tab">Video</button>
+                            <button class="input-tab">Music</button>
+                            <button class="input-tab">Analytics</button>
+                        </div>
+
+                        <div class="input-container">
+                            <div class="input-icon">🚀</div>
+                            <textarea 
+                                class="input-field" 
+                                id="chatInput"
+                                placeholder="Type your prompt here..."
+                                rows="1"
+                            ></textarea>
+                            <div class="input-actions">
+                                <button class="input-action" title="Voice input">🎤</button>
+                                <button class="send-btn" id="sendButton" onclick="sendMessage()">→</button>
+                            </div>
+                        </div>
+
+                        <div class="disclaimer">
+                            CUDA Tutor can make mistakes. Consider checking important information.
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="chat-input-container">
-            <div class="chat-input-wrapper">
-                <textarea 
-                    id="chatInput" 
-                    class="chat-input" 
-                    placeholder="Ask a question about CUDA programming..."
-                    rows="1"
-                ></textarea>
-                <button id="sendButton" class="send-button" onclick="sendMessage()">
-                    ➤
-                </button>
+            <div class="messages-container" id="messagesContainer">
+                <!-- Messages will be added here -->
+            </div>
+
+            <div class="chat-input-area" id="chatInputArea">
+                <div class="chat-input-container">
+                    <div class="input-container">
+                        <div class="input-icon">🚀</div>
+                        <textarea 
+                            class="input-field" 
+                            id="chatInputBottom"
+                            placeholder="Type your message..."
+                            rows="1"
+                        ></textarea>
+                        <div class="input-actions">
+                            <button class="input-action" title="Voice input">🎤</button>
+                            <button class="send-btn" id="sendButtonBottom" onclick="sendMessageFromBottom()">→</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         let isLoading = false;
-        
-        // Generate unique session ID for this browser session
         let sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        console.log('Session ID:', sessionId);
+        let currentChatId = null;
 
-        // Create animated background particles
-        function createParticles() {
-            const particles = document.getElementById('particles');
-            const particleCount = 50;
+        // Auto-resize textarea for both inputs
+        const chatInput = document.getElementById('chatInput');
+        const chatInputBottom = document.getElementById('chatInputBottom');
+        
+        function setupTextarea(textarea) {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // Send message on Enter (but allow Shift+Enter for new lines)
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (textarea.id === 'chatInput') {
+                        sendMessage();
+                    } else {
+                        sendMessageFromBottom();
+                    }
+                }
+            });
+        }
+
+        setupTextarea(chatInput);
+        setupTextarea(chatInputBottom);
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
             
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 20 + 's';
-                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
-                particles.appendChild(particle);
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('show');
             }
         }
 
-        // Auto-resize textarea
-        const chatInput = document.getElementById('chatInput');
-        chatInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
-        });
-
-        // Send message on Enter (but allow Shift+Enter for new lines)
-        chatInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+        function startNewChat() {
+            currentChatId = 'chat_' + Date.now();
+            
+            // Reset to welcome state
+            document.getElementById('chatBody').style.display = 'flex';
+            document.getElementById('messagesContainer').style.display = 'none';
+            document.getElementById('chatInputArea').style.display = 'none';
+            document.getElementById('messagesContainer').innerHTML = '';
+            
+            // Clear inputs
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            chatInputBottom.value = '';
+            chatInputBottom.style.height = 'auto';
+            
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
             }
-        });
+        }
+
+        function sendMessageFromBottom() {
+            const input = document.getElementById('chatInputBottom');
+            const sendButton = document.getElementById('sendButtonBottom');
+            const message = input.value.trim();
+            
+            if (!message || isLoading) return;
+            
+            // Add user message
+            addMessage(message, true);
+            
+            // Clear input and disable button
+            input.value = '';
+            input.style.height = 'auto';
+            sendButton.disabled = true;
+            isLoading = true;
+            
+            // Show typing indicator and process message
+            showTypingIndicator();
+            processMessage(message, sendButton);
+        }
 
         function askQuestion(question) {
             chatInput.value = question;
             sendMessage();
         }
 
-        function addMessage(content, isUser = false, metadata = {}) {
-            const messagesWrapper = document.querySelector('.messages-wrapper');
+        function addMessage(content, isUser = false) {
+            const messagesContainer = document.getElementById('messagesContainer');
             
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
-            
-            // Add context indicator for follow-up responses
-            let contextIndicator = '';
-            if (!isUser && metadata.context_used) {
-                contextIndicator = '<div class="context-indicator"> Building on our previous conversation</div>';
-            }
             
             messageDiv.innerHTML = `
                 <div class="message-avatar">
                     ${isUser ? '👤' : '🤖'}
                 </div>
                 <div class="message-content">
-                    ${contextIndicator}
-                    ${formatMessage(content)}
+                    <div class="message-text">${formatMessage(content)}</div>
                 </div>
             `;
             
-            messagesWrapper.appendChild(messageDiv);
-            
-            // Smooth scroll to bottom
-            const chatMessages = document.getElementById('chatMessages');
-            chatMessages.scrollTo({
-                top: chatMessages.scrollHeight,
-                behavior: 'smooth'
-            });
-            
-            return messageDiv;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
         function formatMessage(content) {
@@ -692,40 +1044,24 @@
         }
 
         function showTypingIndicator() {
-            const messagesWrapper = document.querySelector('.messages-wrapper');
-            
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'message assistant';
-            typingDiv.id = 'typingIndicator';
-            
-            typingDiv.innerHTML = `
-                <div class="message-avatar">🤖</div>
-                <div class="message-content">
-                    <div class="typing-indicator">
-                        <span>Thinking</span>
-                        <div class="typing-dots">
-                            <div class="typing-dot"></div>
-                            <div class="typing-dot"></div>
-                            <div class="typing-dot"></div>
-                        </div>
+            addMessage(`
+                <div style="display: flex; align-items: center; gap: 8px; color: #888;">
+                    <span>Thinking</span>
+                    <div style="display: flex; gap: 4px;">
+                        <div style="width: 6px; height: 6px; background: #888; border-radius: 50%; animation: typing 1.4s infinite ease-in-out;"></div>
+                        <div style="width: 6px; height: 6px; background: #888; border-radius: 50%; animation: typing 1.4s infinite ease-in-out; animation-delay: -0.16s;"></div>
+                        <div style="width: 6px; height: 6px; background: #888; border-radius: 50%; animation: typing 1.4s infinite ease-in-out; animation-delay: -0.32s;"></div>
                     </div>
                 </div>
-            `;
-            
-            messagesWrapper.appendChild(typingDiv);
-            
-            // Smooth scroll to bottom
-            const chatMessages = document.getElementById('chatMessages');
-            chatMessages.scrollTo({
-                top: chatMessages.scrollHeight,
-                behavior: 'smooth'
-            });
+            `);
         }
 
         function hideTypingIndicator() {
-            const typingIndicator = document.getElementById('typingIndicator');
-            if (typingIndicator) {
-                typingIndicator.remove();
+            const messagesContainer = document.getElementById('messagesContainer');
+            const messages = messagesContainer.querySelectorAll('.message');
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage && lastMessage.innerHTML.includes('Thinking')) {
+                lastMessage.remove();
             }
         }
 
@@ -736,6 +1072,11 @@
             
             if (!message || isLoading) return;
             
+            // Switch to chat view
+            document.getElementById('chatBody').style.display = 'none';
+            document.getElementById('messagesContainer').style.display = 'block';
+            document.getElementById('chatInputArea').style.display = 'block';
+            
             // Add user message
             addMessage(message, true);
             
@@ -745,9 +1086,12 @@
             sendButton.disabled = true;
             isLoading = true;
             
-            // Show typing indicator
+            // Show typing indicator and process message
             showTypingIndicator();
-            
+            processMessage(message, sendButton);
+        }
+
+        async function processMessage(message, sendButton) {
             try {
                 // Call your RAG backend with session ID
                 const response = await fetch('/api/chat', {
@@ -757,7 +1101,8 @@
                     },
                     body: JSON.stringify({ 
                         message: message,
-                        session_id: sessionId  // Include session ID
+                        session_id: sessionId,
+                        chat_id: currentChatId
                     })
                 });
                 
@@ -769,29 +1114,19 @@
                 
                 // Hide typing indicator and add response
                 hideTypingIndicator();
-                
-                // Add response with metadata
-                addMessage(data.response, false, {
-                    context_used: data.context_used,
-                    is_follow_up: data.is_follow_up
-                });
+                addMessage(data.response);
                 
             } catch (error) {
                 console.error('Error:', error);
                 hideTypingIndicator();
                 
-                // Show error message
+                // Show error message with demo response
                 const errorMessage = `
-                    <div class="error-message">
-                        <strong>Connection Error:</strong> Unable to connect to the CUDA Tutor backend. 
-                        <br><br>
-                        <strong>Make sure:</strong>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li>Your Flask server is running on port 5001</li>
-                            <li>Ollama is running: <code>ollama serve</code></li>
-                            <li>Your model is loaded: <code>ollama run llama3.2:latest</code></li>
-                        </ul>
-                        <strong>Demo response:</strong> CUDA (Compute Unified Device Architecture) is NVIDIA's parallel computing platform that allows developers to use GPU cores for general-purpose computing, achieving significant speedups for parallelizable tasks.
+                    <div style="color: #fca5a5; margin-bottom: 16px;">
+                        <strong>Connection Error:</strong> Unable to connect to the CUDA Tutor backend.
+                    </div>
+                    <div style="background: #1a1a1a; padding: 12px; border-radius: 8px; margin: 8px 0; border-left: 3px solid #76b900;">
+                        <strong>Demo Response:</strong> CUDA (Compute Unified Device Architecture) is NVIDIA's parallel computing platform that allows developers to use GPU cores for general-purpose computing, achieving significant speedups for parallelizable tasks. It's particularly powerful for scientific computing, machine learning, and image processing applications.
                     </div>
                 `;
                 addMessage(errorMessage);
@@ -802,55 +1137,25 @@
             isLoading = false;
         }
 
-        function clearConversation() {
-            if (confirm('Clear this conversation? This will reset the context memory.')) {
-                fetch('/api/clear_session', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ session_id: sessionId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Clear the chat messages
-                    const messagesWrapper = document.querySelector('.messages-wrapper');
-                    messagesWrapper.innerHTML = `
-                        <div class="welcome-message">
-                            <h3> Conversation Cleared</h3>
-                            <p>Context memory has been reset. You can start a fresh conversation.</p>
-                            
-                            <div class="example-questions">
-                                <div class="example-question" onclick="askQuestion('What is CUDA and why is it useful?')">
-                                     What is CUDA?
-                                </div>
-                                <div class="example-question" onclick="askQuestion('How do I optimize memory access in CUDA kernels?')">
-                                     Memory optimization
-                                </div>
-                                <div class="example-question" onclick="askQuestion('Show me a simple CUDA kernel example')">
-                                     Kernel example
-                                </div>
-                                <div class="example-question" onclick="askQuestion('What are the best practices for CUDA programming?')">
-                                     Best practices
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    console.log('Conversation cleared:', data);
-                })
-                .catch(error => {
-                    console.error('Error clearing conversation:', error);
-                });
+        // Tab switching functionality
+        document.querySelectorAll('.input-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.input-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('mobileOverlay').classList.remove('show');
             }
-        }
+        });
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Create animated particles
-            createParticles();
-            
-            // Optional: Show session info in console
-            console.log('CUDA Chat Interface with Context Memory - Fullscreen Edition');
+            console.log('CUDA Tutor - Modern Interface Loaded');
             console.log('Session ID:', sessionId);
             
             // Check backend status
@@ -859,28 +1164,44 @@
                 .then(data => {
                     console.log('Backend status:', data);
                     
-                    // Update status indicator based on backend
-                    const statusDot = document.querySelector('.status-dot');
-                    const statusText = document.querySelector('.status-indicator span');
-                    
+                    // Update status indicator
+                    const statusElement = document.querySelector('.chat-status');
                     if (data.rag_loaded && data.ollama_status === 'connected') {
-                        statusDot.style.background = '#76b900';
-                        statusText.textContent = 'Online';
+                        statusElement.textContent = 'CUDA GPT 3.0 ✓';
+                        statusElement.style.background = '#1a5c1a';
+                        statusElement.style.color = '#4ade80';
                     } else {
-                        statusDot.style.background = '#fbbf24';
-                        statusText.textContent = 'Limited';
+                        statusElement.textContent = 'CUDA GPT 3.0 ⚠';
+                        statusElement.style.background = '#5c4a1a';
+                        statusElement.style.color = '#fbbf24';
                     }
                 })
                 .catch(error => {
                     console.error('Backend status check failed:', error);
                     
                     // Update status to offline
-                    const statusDot = document.querySelector('.status-dot');
-                    const statusText = document.querySelector('.status-indicator span');
-                    statusDot.style.background = '#ef4444';
-                    statusText.textContent = 'Offline';
+                    const statusElement = document.querySelector('.chat-status');
+                    statusElement.textContent = 'CUDA GPT 3.0 ✗';
+                    statusElement.style.background = '#5c1a1a';
+                    statusElement.style.color = '#f87171';
                 });
         });
+
+        // Add CSS animation for typing indicator
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes typing {
+                0%, 80%, 100% { 
+                    transform: scale(0.5); 
+                    opacity: 0.5; 
+                }
+                40% { 
+                    transform: scale(1); 
+                    opacity: 1; 
+                }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

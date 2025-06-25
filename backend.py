@@ -16,14 +16,17 @@ import os
 import json
 import time
 
+# Create Flask app first
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend
+
+# Configure CORS properly - AFTER creating the app
+CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"])
 
 conversation_sessions = {}
 
 class SimpleRAG:
     def __init__(self):
-        print(" Initializing RAG system...")
+        print("🔧 Initializing RAG system...")
         
         # Load embedding model
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -34,7 +37,7 @@ class SimpleRAG:
             dataset = load_dataset("SakanaAI/AI-CUDA-Engineer-Archive")
             self.df = dataset["level_1"].to_pandas().head(50)  # Limit for speed
         except Exception as e:
-            print(f" Could not load dataset: {e}")
+            print(f"⚠️ Could not load dataset: {e}")
             # Create dummy data for demo
             self.df = pd.DataFrame({
                 'Op_Name': ['Matrix Multiply', 'Vector Add', 'Convolution'],
@@ -64,7 +67,7 @@ class SimpleRAG:
             self.embeddings = None
     
     def search(self, query, top_k=2):
-        """Search for relevant examples - FIXED"""
+        """Search for relevant examples"""
         if self.embeddings is None or not self.knowledge:
             return []
             
@@ -76,7 +79,7 @@ class SimpleRAG:
         results = [self.knowledge[i] for i in top_indices]
         return results
     
-    def generate_response(self, query, conversation_context=""):
+    def generate_response(self, query, conversation_context="", stream=False):
         """Generate response using RAG with conversation context"""
         
         # 1. Retrieve relevant examples
@@ -119,9 +122,9 @@ Provide a helpful answer:"""
                 json={
                     "model": "llama3.2:latest",
                     "prompt": prompt,
-                    "stream": False,
+                    "stream": stream,  # Enable streaming if requested
                     "options": {
-                        "num_predict": 800,  # Reasonable token limit
+                        "num_predict": 10000,  # Reasonable token limit
                         "temperature": 0.7,
                         "top_p": 0.9,
                         "stop": ["Student question:", "Question:", "Human:", "User:", "Previous conversation:", "Current question:"],
@@ -129,26 +132,42 @@ Provide a helpful answer:"""
                         "repeat_penalty": 1.1
                     }
                 }, 
-                timeout=120
+                timeout=120,
+                stream=stream
             )
             
             if response.status_code == 200:
-                result = response.json()
-                generated_text = result.get("response", "").strip()
-                
-                # Clean up the response - remove any truncated sentences
-                if generated_text:
-                    # If response ends abruptly (no punctuation), try to clean it up
-                    if not generated_text.endswith(('.', '!', '?', ':', '```')):
-                        # Find the last complete sentence
-                        sentences = generated_text.split('.')
-                        if len(sentences) > 1:
-                            generated_text = '.'.join(sentences[:-1]) + '.'
-                        # If no complete sentences, keep as is but add note
-                        elif len(generated_text) > 50:
-                            generated_text += "..."
-                
-                return generated_text
+                if stream:
+                    # Handle streaming response (for future implementation)
+                    full_response = ""
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                chunk = json.loads(line.decode('utf-8'))
+                                if 'response' in chunk:
+                                    full_response += chunk['response']
+                                if chunk.get('done', False):
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+                    return full_response
+                else:
+                    result = response.json()
+                    generated_text = result.get("response", "").strip()
+                    
+                    # Clean up the response - remove any truncated sentences
+                    if generated_text:
+                        # If response ends abruptly (no punctuation), try to clean it up
+                        if not generated_text.endswith(('.', '!', '?', ':', '```')):
+                            # Find the last complete sentence
+                            sentences = generated_text.split('.')
+                            if len(sentences) > 1:
+                                generated_text = '.'.join(sentences[:-1]) + '.'
+                            # If no complete sentences, keep as is but add note
+                            elif len(generated_text) > 50:
+                                generated_text += "..."
+                    
+                    return generated_text
             else:
                 return f"I'm having trouble connecting to the AI model. Status: {response.status_code}"
                 
@@ -223,23 +242,30 @@ except Exception as e:
 @app.route('/')
 def index():
     """Serve the chat interface"""
-    # Read the HTML file we created
-    try:
-        with open('index.html', 'r') as f:
-            return f.read()
-    except FileNotFoundError:
-        return """
-        <h1>CUDA Chat Interface</h1>
-        <p>Please save the HTML content as 'index.html' in the same directory.</p>
-        <p>Or use the API directly at /api/chat</p>
-        """
+    return jsonify({
+        'message': 'CUDA Tutor Backend is running!',
+        'status': 'healthy',
+        'endpoints': {
+            'chat': '/api/chat',
+            'status': '/api/status',
+            'health': '/health'
+        }
+    })
 
-@app.route('/api/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat():
+    # Handle preflight CORS request
+    if request.method == 'OPTIONS':
+        return '', 200
+        
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
         message = data.get('message', '').strip()
         session_id = data.get('session_id', 'default')  # Get session ID
+        stream = data.get('stream', False)  # Check if client wants streaming
         
         if not message:
             return jsonify({'error': 'No message provided'}), 400
@@ -265,7 +291,7 @@ def chat():
         # Generate response with context
         if rag_system:
             # Always use conversation context if available
-            response = rag_system.generate_response(message, conversation_context)
+            response = rag_system.generate_response(message, conversation_context, stream=stream)
         else:
             # Fallback response
             response = """I apologize, but the RAG system isn't fully initialized. Here's a basic response:
@@ -295,9 +321,9 @@ To get started with CUDA programming, you'll need:
         if len(session_history) > 10:
             conversation_sessions[session_id] = session_history[-10:]
         
-        print(f"Session {session_id}: {response[:100]}...")
-        print(f"Context used: {bool(conversation_context)}")
-        print(f"Follow-up detected: {is_follow_up}")
+        print(f" Session {session_id}: {response[:100]}...")
+        print(f" Context used: {bool(conversation_context)}")
+        print(f"🔗 Follow-up detected: {is_follow_up}")
         
         return jsonify({
             'response': response,
@@ -308,7 +334,7 @@ To get started with CUDA programming, you'll need:
         })
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f" Error: {e}")
         return jsonify({
             'error': str(e),
             'status': 'error'
@@ -376,22 +402,23 @@ def health():
     })
 
 if __name__ == '__main__':
-    print("Starting Enhanced Flask server with Context Memory...")
-    print("Available endpoints:")
-    print("   • http://localhost:5001/                    - Chat interface")
+    print(" Starting Enhanced Flask server with Context Memory...")
+    print(" Available endpoints:")
+    print("   • http://localhost:5001/                    - API Info")
     print("   • http://localhost:5001/api/chat            - Chat API (with context)")
     print("   • http://localhost:5001/api/status          - System status")
     print("   • http://localhost:5001/api/clear_session   - Clear conversation")
     print("   • http://localhost:5001/api/session_info/<id> - Session details")
     print("   • http://localhost:5001/health              - Health check")
     print()
-    print("New Features:")
+    print(" New Features:")
     print("   Conversation memory per session")
     print("   Context-aware responses")
     print("   Follow-up question detection")
     print("   Automatic session cleanup")
+    print("   Fixed CORS configuration")
     print()
-    print(" Make sure Ollama is running: ollama serve")
+    print("⚠️ Make sure Ollama is running: ollama serve")
     print(" Starting server on http://localhost:5001")
     
     app.run(debug=True, host='0.0.0.0', port=5001)

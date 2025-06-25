@@ -1266,8 +1266,8 @@ const Sidebar = ({ isOpen, onClose, onNewChat, backendStatus }) => {
 
   const getConnectionStatusText = () => {
     if (backendStatus.connecting) return '🔄 Connecting to backend...';
-    if (backendStatus.online) return '✅ Backend connected';
-    if (backendStatus.limited) return '⚠️ Backend limited functionality';
+    if (backendStatus.online) return ' Backend connected';
+    if (backendStatus.limited) return ' Backend limited functionality';
     return '❌ Backend disconnected';
   };
 

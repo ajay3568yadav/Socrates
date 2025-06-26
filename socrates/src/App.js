@@ -5,6 +5,8 @@ import Sidebar from './components/Sidebar';
 import ChatHeader from './components/ChatHeader';
 import WelcomeView from './components/WelcomeView';
 import ChatView from './components/ChatView';
+import SplitPaneLayout from './components/SplitPaneLayout';
+import ImprovedCodeEditor from './components/ImprovedCodeEditor';
 import supabase from './config/supabaseClient';
 
 // API Configuration
@@ -16,9 +18,15 @@ const CudaTutorApp = () => {
   const [currentView, setCurrentView] = useState('welcome');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Changed to true by default
-  const [isMobile, setIsMobile] = useState(false); // Added mobile detection
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState(null);
+
+  // Split Pane State
+  const [splitPaneMode, setSplitPaneMode] = useState(false);
+  const [splitPaneWidth, setSplitPaneWidth] = useState(60);
+  const [codeEditorContent, setCodeEditorContent] = useState('');
+  const [codeEditorLanguage, setCodeEditorLanguage] = useState('c');
 
   // Chat Management State
   const [currentChatId, setCurrentChatId] = useState(null);
@@ -43,15 +51,38 @@ const CudaTutorApp = () => {
   const statusCheckInProgress = useRef(false);
   const statusIntervalRef = useRef(null);
 
+  // ==================== SPLIT PANE FUNCTIONS ====================
+  
+  const handleEnterSplitMode = (code, language = 'c') => {
+    setCodeEditorContent(code);
+    setCodeEditorLanguage(language);
+    setSplitPaneMode(true);
+  };
+
+  const handleExitSplitMode = () => {
+    setSplitPaneMode(false);
+    setCodeEditorContent('');
+  };
+
+  const handleSplitPaneWidthChange = (width) => {
+    setSplitPaneWidth(width);
+  };
+
+  const handleCodeReviewFromSplit = (reviewPrompt) => {
+    sendMessage(reviewPrompt);
+  };
+
+  const handleOpenCodeEditor = (code, language = 'c') => {
+    handleEnterSplitMode(code, language);
+  };
+
   // ==================== MOBILE DETECTION ====================
   
-  // Check if device is mobile and adjust sidebar accordingly
   useEffect(() => {
     const checkMobile = () => {
       const isMobileDevice = window.innerWidth <= 768;
       setIsMobile(isMobileDevice);
       
-      // On mobile, sidebar should be hidden by default
       if (isMobileDevice && sidebarOpen) {
         setSidebarOpen(false);
       }
@@ -64,19 +95,16 @@ const CudaTutorApp = () => {
 
   // ==================== SIDEBAR TOGGLE FUNCTIONS ====================
   
-  // Toggle sidebar visibility
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);
   };
 
-  // Close sidebar when clicking outside on mobile
   const handleOverlayClick = () => {
     if (isMobile) {
       setSidebarOpen(false);
     }
   };
 
-  // Close sidebar when selecting items on mobile
   const handleMobileItemSelect = () => {
     if (isMobile) {
       setSidebarOpen(false);
@@ -86,7 +114,6 @@ const CudaTutorApp = () => {
   // ==================== AUTHENTICATION FUNCTIONS ====================
   
   useEffect(() => {
-    // Check initial auth state
     const checkAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -104,20 +131,17 @@ const CudaTutorApp = () => {
 
     checkAuth();
 
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session);
       setUser(session?.user || null);
       setLoading(false);
     });
 
-    // Add global copy function for code blocks
     window.copyCodeToClipboard = async (encodedCode, buttonElement) => {
       try {
         const code = decodeURIComponent(encodedCode);
         await navigator.clipboard.writeText(code);
         
-        // Show temporary success feedback
         if (buttonElement) {
           const originalText = buttonElement.textContent;
           buttonElement.textContent = '✓';
@@ -136,13 +160,12 @@ const CudaTutorApp = () => {
     return () => {
       subscription.unsubscribe();
       delete window.copyCodeToClipboard;
-      // Clear any existing interval
       if (statusIntervalRef.current) {
         clearInterval(statusIntervalRef.current);
         statusIntervalRef.current = null;
       }
     };
-  }, []); // Empty dependency array - run only once
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -150,13 +173,14 @@ const CudaTutorApp = () => {
       if (error) {
         console.error('Logout error:', error);
       } else {
-        // Clear app state on logout
         setMessages([]);
         setCurrentView('welcome');
         setCurrentChatId(null);
         setChats([]);
-        setSidebarOpen(!isMobile); // Reset to default based on device
+        setSidebarOpen(!isMobile);
         setSelectedModuleId(null);
+        setSplitPaneMode(false);
+        setCodeEditorContent('');
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -166,7 +190,6 @@ const CudaTutorApp = () => {
   // ==================== BACKEND STATUS FUNCTIONS ====================
 
   const checkBackendStatus = async () => {
-    // Prevent multiple simultaneous requests
     if (statusCheckInProgress.current) {
       console.log('Status check already in progress, skipping...');
       return;
@@ -178,9 +201,8 @@ const CudaTutorApp = () => {
       
       console.log('Checking backend status...');
       
-      // Add a timeout wrapper to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
       const response = await fetch(`${API_BASE_URL}/api/status`, {
         method: 'GET',
@@ -223,9 +245,7 @@ const CudaTutorApp = () => {
     }
   };
 
-  // Backend status checking when user is authenticated
   useEffect(() => {
-    // Clear any existing interval first
     if (statusIntervalRef.current) {
       clearInterval(statusIntervalRef.current);
       statusIntervalRef.current = null;
@@ -234,20 +254,17 @@ const CudaTutorApp = () => {
     if (user) {
       console.log('User authenticated, starting backend status checks');
       
-      // Set default module if none selected
       if (!selectedModuleId) {
         console.log('No module selected, setting default CUDA Basics module');
-        setSelectedModuleId('c801ac6c-1232-4c96-89b1-c4eadf41026c'); // Default CUDA Basics module
+        setSelectedModuleId('c801ac6c-1232-4c96-89b1-c4eadf41026c');
       }
       
-      // Initial check
       checkBackendStatus();
       
-      // Set up periodic checks
       statusIntervalRef.current = setInterval(() => {
         console.log('Periodic backend status check');
         checkBackendStatus();
-      }, 120000); // Check every 2 minutes
+      }, 120000);
     }
 
     return () => {
@@ -256,11 +273,10 @@ const CudaTutorApp = () => {
         statusIntervalRef.current = null;
       }
     };
-  }, [user, selectedModuleId]); // Re-run when user or selectedModuleId changes
+  }, [user, selectedModuleId]);
 
   // ==================== MESSAGE PERSISTENCE FUNCTIONS ====================
 
-  // Save a message to the Messages table
   const saveMessage = async (chatId, sender, content, orderIndex) => {
     if (!chatId) {
       console.error('Cannot save message: chatId is null');
@@ -270,7 +286,7 @@ const CudaTutorApp = () => {
     try {
       const messageData = {
         chat_id: chatId,
-        sender: sender, // 'user' or 'assistant'
+        sender: sender,
         content: content,
         order_index: orderIndex,
         timestamp: new Date().toISOString()
@@ -297,7 +313,6 @@ const CudaTutorApp = () => {
     }
   };
 
-  // Load messages for a specific chat
   const loadChatMessages = async (chatId) => {
     if (!chatId) {
       console.error('Cannot load messages: chatId is null');
@@ -318,7 +333,6 @@ const CudaTutorApp = () => {
         return [];
       }
 
-      // Convert database messages to app message format
       const formattedMessages = data.map(msg => ({
         id: `${msg.message_id}_${msg.sender}`,
         role: msg.sender,
@@ -336,7 +350,6 @@ const CudaTutorApp = () => {
     }
   };
 
-  // Create a new chat when user sends first message
   const createNewChatForMessage = async (userMessage) => {
     if (!user) {
       console.error('Cannot create chat: user is null');
@@ -344,7 +357,6 @@ const CudaTutorApp = () => {
     }
 
     try {
-      // Generate a title from the first message (first 50 characters)
       const heading = userMessage.length > 50 
         ? userMessage.substring(0, 50) + '...' 
         : userMessage;
@@ -354,8 +366,8 @@ const CudaTutorApp = () => {
         heading: heading,
         description: 'Chat conversation',
         timestamp: new Date().toISOString(),
-        course_id: '1e44eb02-8daa-44a0-a7ee-28f88ce6863f', // Default CUDA Basics course
-        module_id: selectedModuleId || 'c801ac6c-1232-4c96-89b1-c4eadf41026c', // Use selected module or default
+        course_id: '1e44eb02-8daa-44a0-a7ee-28f88ce6863f',
+        module_id: selectedModuleId || 'c801ac6c-1232-4c96-89b1-c4eadf41026c',
         status: 'active'
       };
 
@@ -372,7 +384,6 @@ const CudaTutorApp = () => {
         return null;
       }
 
-      // Add the new chat to the list and make it active
       setChats(prevChats => [data, ...prevChats]);
       setCurrentChatId(data.chat_id);
       
@@ -386,7 +397,6 @@ const CudaTutorApp = () => {
 
   // ==================== CHAT MANAGEMENT FUNCTIONS ====================
 
-  // Load user's chats from Supabase (filtered by module if selected)
   const loadChats = async (moduleId = null) => {
     if (!user) return;
     
@@ -401,7 +411,6 @@ const CudaTutorApp = () => {
         .select('*')
         .eq('user_id', user.id);
 
-      // If a module is selected, filter chats by module_id
       if (filterModuleId) {
         query = query.eq('module_id', filterModuleId);
         console.log('Filtering chats by module_id:', filterModuleId);
@@ -412,7 +421,6 @@ const CudaTutorApp = () => {
       if (error) {
         console.error('Error loading chats:', error);
         
-        // Handle specific error for missing table
         if (error.code === '42P01') {
           console.warn('Chats table does not exist. Please create it in Supabase first.');
           setChats([]);
@@ -430,7 +438,6 @@ const CudaTutorApp = () => {
     }
   };
 
-  // Create a new empty chat
   const createNewChat = async () => {
     if (!user) return;
 
@@ -458,15 +465,12 @@ const CudaTutorApp = () => {
         return;
       }
 
-      // Add the new chat to the list
       setChats(prevChats => [data, ...prevChats]);
       
-      // Switch to the new chat with empty messages
       setCurrentChatId(data.chat_id);
       setMessages([]);
       setCurrentView('chat');
       
-      // Close sidebar on mobile after creating chat
       handleMobileItemSelect();
       
       console.log('New empty chat created:', data);
@@ -475,18 +479,15 @@ const CudaTutorApp = () => {
     }
   };
 
-  // Select a chat from the sidebar and load its messages
   const selectChat = async (chatId) => {
     console.log('Selecting chat:', chatId);
     setCurrentChatId(chatId);
     setCurrentView('chat');
     setIsLoading(true);
 
-    // Close sidebar on mobile after selecting chat
     handleMobileItemSelect();
 
     try {
-      // Load messages for this chat
       const chatMessages = await loadChatMessages(chatId);
       setMessages(chatMessages);
       console.log('Chat selected and messages loaded:', chatId);
@@ -498,12 +499,10 @@ const CudaTutorApp = () => {
     }
   };
 
-  // Update chat heading and timestamp
   const updateChatTitle = async (chatId, firstMessage) => {
     if (!chatId || !firstMessage) return;
 
     try {
-      // Generate a heading from the first message (first 50 characters)
       const heading = firstMessage.length > 50 
         ? firstMessage.substring(0, 50) + '...' 
         : firstMessage;
@@ -521,7 +520,6 @@ const CudaTutorApp = () => {
       if (error) {
         console.error('Error updating chat heading:', error);
       } else {
-        // Update local state
         setChats(prevChats => 
           prevChats.map(chat => 
             chat.chat_id === chatId 
@@ -536,15 +534,12 @@ const CudaTutorApp = () => {
     }
   };
 
-  // Handle module selection and load associated chats
   const handleSelectModule = async (moduleId) => {
     console.log('Module selected:', moduleId);
     setSelectedModuleId(moduleId);
     
-    // Close sidebar on mobile after selecting module
     handleMobileItemSelect();
     
-    // Clear current chat if it doesn't belong to the selected module
     if (currentChatId) {
       const currentChat = chats.find(chat => chat.chat_id === currentChatId);
       if (currentChat && currentChat.module_id !== moduleId) {
@@ -554,16 +549,13 @@ const CudaTutorApp = () => {
       }
     }
     
-    // Load chats for the selected module
     await loadChats(moduleId);
   };
 
-  // Start a new chat
   const startNewChat = () => {
     createNewChat();
   };
 
-  // Load chats when selectedModuleId changes or when user is authenticated
   useEffect(() => {
     if (user && selectedModuleId) {
       console.log('User and module ready, loading chats for module:', selectedModuleId);
@@ -578,7 +570,6 @@ const CudaTutorApp = () => {
     let chatId = currentChatId;
     let orderIndex = messages.length;
 
-    // If no current chat, create a new one
     if (!chatId) {
       console.log('No current chat, creating new chat...');
       const newChat = await createNewChatForMessage(message);
@@ -587,10 +578,9 @@ const CudaTutorApp = () => {
         return;
       }
       chatId = newChat.chat_id;
-      orderIndex = 0; // First message in new chat
+      orderIndex = 0;
     }
 
-    // Create user message object
     const userMessage = {
       id: Date.now() + '_user',
       role: 'user',
@@ -598,24 +588,20 @@ const CudaTutorApp = () => {
       timestamp: new Date().toISOString()
     };
 
-    // Add user message to UI immediately
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     setCurrentView('chat');
 
-    // Save user message to database
     const savedUserMessage = await saveMessage(chatId, 'user', message, orderIndex);
     if (savedUserMessage) {
       console.log('User message saved to database');
     }
 
-    // Update chat title if this is the first message
     if (orderIndex === 0) {
       await updateChatTitle(chatId, message);
     }
 
     try {
-      // Send message to backend API
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
@@ -644,10 +630,8 @@ const CudaTutorApp = () => {
         isStreaming: false
       };
 
-      // Add assistant message to UI
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Save assistant message to database
       const savedAssistantMessage = await saveMessage(chatId, 'assistant', assistantMessage.content, orderIndex + 1);
       if (savedAssistantMessage) {
         console.log('Assistant message saved to database');
@@ -666,7 +650,6 @@ const CudaTutorApp = () => {
 
       setMessages(prev => [...prev, errorMessage]);
       
-      // Save error message to database
       await saveMessage(chatId, 'assistant', errorMessage.content, orderIndex + 1);
     } finally {
       setIsLoading(false);
@@ -675,7 +658,6 @@ const CudaTutorApp = () => {
 
   // ==================== RENDER FUNCTIONS ====================
 
-  // Show loading spinner while checking auth
   if (loading) {
     return (
       <div className="app-container">
@@ -688,18 +670,10 @@ const CudaTutorApp = () => {
     );
   }
 
-  // Show AuthPage if user is not authenticated
   if (!user) {
     return <AuthPage />;
   }
 
-  console.log('Current user:', user);
-  console.log('Current chat ID:', currentChatId);
-  console.log('Selected module ID:', selectedModuleId);
-  console.log('Sidebar open:', sidebarOpen);
-  console.log('Is mobile:', isMobile);
-
-  // Get sidebar classes based on state
   const getSidebarClasses = () => {
     let classes = 'sidebar';
     
@@ -712,7 +686,6 @@ const CudaTutorApp = () => {
     return classes;
   };
 
-  // Main authenticated app
   return (
     <div className="app-container">
       {/* Mobile Overlay */}
@@ -727,7 +700,7 @@ const CudaTutorApp = () => {
           onClose={() => setSidebarOpen(false)}
           onNewChat={startNewChat}
           onSelectChat={selectChat}
-          chats={chats || []} // Ensure it's always an array
+          chats={chats || []}
           loadingChats={loadingChats}
           currentChatId={currentChatId}
           backendStatus={backendStatus || { online: false, limited: false, connecting: false }}
@@ -749,21 +722,65 @@ const CudaTutorApp = () => {
           user={user}
           currentChat={chats.find(chat => chat.chat_id === currentChatId)}
           selectedModuleId={selectedModuleId}
+          splitPaneMode={splitPaneMode}
+          onExitSplitMode={handleExitSplitMode}
         />
         
-        {currentView === 'welcome' ? (
-          <WelcomeView onSendMessage={sendMessage} user={user} />
-        ) : (
-          <ChatView 
-            messages={messages}
-            isLoading={isLoading}
-            onSendMessage={sendMessage}
+        {splitPaneMode ? (
+          /* Claude-like Split Pane Layout */
+          <SplitPaneLayout
+            initialLeftWidth={splitPaneWidth}
+            onWidthChange={handleSplitPaneWidthChange}
+            leftPane={
+              currentView === 'welcome' ? (
+                <WelcomeView 
+                  onSendMessage={sendMessage} 
+                  user={user}
+                />
+              ) : (
+                <ChatView 
+                  messages={messages}
+                  isLoading={isLoading}
+                  onSendMessage={sendMessage}
+                  onOpenCodeEditor={handleOpenCodeEditor}
+                  splitPaneMode={true}
+                />
+              )
+            }
+            rightPane={
+              <ImprovedCodeEditor
+                initialCode={codeEditorContent}
+                language={codeEditorLanguage}
+                onSendForReview={handleCodeReviewFromSplit}
+                isLoading={isLoading}
+                title={`${codeEditorLanguage.toUpperCase()} Code Editor`}
+                onClose={handleExitSplitMode}
+                showCloseButton={true}
+              />
+            }
           />
+        ) : (
+          /* Normal Single Pane Layout */
+          <>
+            {currentView === 'welcome' ? (
+              <WelcomeView 
+                onSendMessage={sendMessage} 
+                user={user}
+              />
+            ) : (
+              <ChatView 
+                messages={messages}
+                isLoading={isLoading}
+                onSendMessage={sendMessage}
+                onOpenCodeEditor={handleOpenCodeEditor}
+                splitPaneMode={false}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
   );
 };
 
-// Export the main app
 export default CudaTutorApp;

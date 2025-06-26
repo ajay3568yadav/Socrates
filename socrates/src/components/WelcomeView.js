@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../css/WelcomeView.css'; 
-const WelcomeView = ({ onSendMessage, user }) => {
+
+const WelcomeView = ({ onSendMessage, user, codePanelOpen = false }) => {
   const [inputValue, setInputValue] = useState('');
   const [activeTab, setActiveTab] = useState('All');
   const textareaRef = useRef(null);
@@ -70,8 +71,18 @@ const WelcomeView = ({ onSendMessage, user }) => {
     return 'there';
   };
 
+  // Calculate width when code panel is open
+  const contentWidth = codePanelOpen ? 'calc(100% - var(--code-panel-width, 50%))' : '100%';
+
   return (
-    <div className="welcome-container">
+    <div 
+      className="welcome-container"
+      style={{ 
+        width: contentWidth,
+        transition: 'width 0.3s ease',
+        maxWidth: codePanelOpen ? 'none' : '100%'
+      }}
+    >
       <div className="welcome-icon">🚀</div>
 
       <h1 className="welcome-title">

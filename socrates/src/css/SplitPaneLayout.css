@@ -1,0 +1,160 @@
+/* SplitPaneLayout.css */
+.split-pane-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.split-pane-container.resizing {
+  cursor: col-resize;
+}
+
+.split-pane-container.resizing * {
+  user-select: none;
+  pointer-events: none;
+}
+
+.split-pane-container.resizing .split-pane-resizer {
+  pointer-events: all;
+}
+
+/* Left Pane - Chat Area */
+.split-pane-left {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #111111;
+  min-width: 0;
+  transition: width 0.1s ease;
+}
+
+/* Right Pane - Code Editor */
+.split-pane-right {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0d1117;
+  border-left: 1px solid #30363d;
+  min-width: 0;
+  transition: width 0.1s ease;
+}
+
+/* Resizer */
+.split-pane-resizer {
+  width: 8px;
+  background: #21262d;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1000;
+  transition: background-color 0.2s ease;
+  border-left: 1px solid #30363d;
+  border-right: 1px solid #30363d;
+}
+
+.split-pane-resizer:hover {
+  background: #30363d;
+}
+
+.split-pane-resizer.dragging {
+  background: #1f6feb;
+}
+
+.resizer-handle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 60px;
+  width: 100%;
+  justify-content: center;
+  gap: 4px;
+}
+
+.resizer-line {
+  width: 1px;
+  height: 20px;
+  background: #484f58;
+  transition: background-color 0.2s ease;
+}
+
+.split-pane-resizer:hover .resizer-line {
+  background: #6e7681;
+}
+
+.split-pane-resizer.dragging .resizer-line {
+  background: #58a6ff;
+}
+
+.resizer-dots {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #484f58;
+  transition: background-color 0.2s ease;
+}
+
+.split-pane-resizer:hover .dot {
+  background: #6e7681;
+}
+
+.split-pane-resizer.dragging .dot {
+  background: #58a6ff;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .split-pane-container {
+    flex-direction: column;
+  }
+  
+  .split-pane-left,
+  .split-pane-right {
+    width: 100% !important;
+  }
+  
+  .split-pane-resizer {
+    display: none;
+  }
+  
+  .split-pane-right {
+    border-left: none;
+    border-top: 1px solid #30363d;
+    height: 40%;
+  }
+  
+  .split-pane-left {
+    height: 60%;
+  }
+}
+
+/* Smooth transitions when not resizing */
+.split-pane-container:not(.resizing) .split-pane-left,
+.split-pane-container:not(.resizing) .split-pane-right {
+  transition: width 0.2s ease;
+}
+
+/* Prevent text selection during resize */
+.split-pane-container.resizing,
+.split-pane-container.resizing * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Focus states for accessibility */
+.split-pane-resizer:focus {
+  outline: 2px solid #1f6feb;
+  outline-offset: 2px;
+}

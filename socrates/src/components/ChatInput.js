@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../css/ChatInput.css';
-const ChatInput = ({ onSendMessage, isLoading }) => {
+
+const ChatInput = ({ onSendMessage, isLoading, splitPaneMode = false }) => {
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef(null);
 
@@ -27,7 +28,7 @@ const ChatInput = ({ onSendMessage, isLoading }) => {
   }, [inputValue]);
 
   return (
-    <div className="chat-input-area">
+    <div className={`chat-input-area ${splitPaneMode ? 'split-pane-mode' : ''}`}>
       <div className="chat-input-container">
         <div className="input-container">
           <div className="input-icon">🚀</div>
@@ -37,19 +38,21 @@ const ChatInput = ({ onSendMessage, isLoading }) => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
+            placeholder={splitPaneMode ? "Ask about the code..." : "Type your message..."}
             className="input-field"
             rows={1}
             disabled={isLoading}
           />
           
           <div className="input-actions">
-            <button className="input-action">🎤</button>
+            <button className="input-action" title="Voice input">🎤</button>
             <button 
               onClick={handleSubmit}
               disabled={!inputValue.trim() || isLoading}
               className="send-btn"
+              title="Send message"
             >
+              →
             </button>
           </div>
         </div>

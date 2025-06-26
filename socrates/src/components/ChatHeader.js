@@ -6,7 +6,9 @@ const ChatHeader = ({
   selectedModule, 
   user, 
   onToggleSidebar, 
-  isSidebarVisible 
+  isSidebarVisible,
+  splitPaneMode = false,
+  onExitSplitMode
 }) => {
   return (
     <div className="chat-header">
@@ -19,10 +21,13 @@ const ChatHeader = ({
         {isSidebarVisible ? '←' : '→'}
       </button>
 
-      {/* Back Button (for mobile) */}
-      <button className="back-btn">
-        ←
-      </button>
+      {/* Split Pane Mode Indicator */}
+      {splitPaneMode && (
+        <div className="split-mode-indicator">
+          <span className="split-icon">⚡</span>
+          <span className="split-text">Split View</span>
+        </div>
+      )}
 
       {/* Chat/Module Title */}
       <div className="chat-title-section">
@@ -53,6 +58,15 @@ const ChatHeader = ({
 
       {/* Action Buttons */}
       <div className="chat-actions">
+        {splitPaneMode && (
+          <button 
+            className="chat-action exit-split" 
+            onClick={onExitSplitMode}
+            title="Exit split view"
+          >
+            ✕
+          </button>
+        )}
         <button className="chat-action" title="Settings">
           ⚙️
         </button>

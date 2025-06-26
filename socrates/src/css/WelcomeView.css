@@ -7,6 +7,8 @@
   justify-content: center;
   padding: 40px 24px;
   text-align: center;
+  /* Width will be controlled by inline styles when code panel is open */
+  transition: width 0.3s ease;
 }
 
 .welcome-icon {
@@ -98,6 +100,7 @@
 .input-section {
   width: 100%;
   max-width: 600px;
+  position: relative;
 }
 
 .input-tabs {
@@ -132,6 +135,96 @@
   background: #22c55e;
 }
 
+.input-container {
+  background: #1f1f1f;
+  border: 1px solid #333333;
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.input-container:focus-within {
+  border-color: #22c55e;
+}
+
+.input-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.input-field {
+  flex: 1;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  resize: none;
+  min-height: 24px;
+  max-height: 120px;
+  outline: none;
+  font-family: inherit;
+}
+
+.input-field::placeholder {
+  color: #888888;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-action {
+  background: none;
+  border: none;
+  color: #888888;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.input-action:hover {
+  background: #333333;
+  color: white;
+}
+
+.send-btn {
+  background: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-btn:hover {
+  background: #16a34a;
+}
+
+.send-btn:disabled {
+  background: #333333;
+  cursor: not-allowed;
+}
+
 .disclaimer {
   margin-top: 24px;
   font-size: 12px;
@@ -143,6 +236,7 @@
 @media (max-width: 768px) {
   .welcome-container {
     padding: 20px 16px;
+    width: 100% !important; /* Override inline styles on mobile */
   }
 
   .quick-actions {
@@ -162,19 +256,4 @@
     height: 60px;
     font-size: 28px;
   }
-}
-
-.input-container {
-  background: #1f1f1f;
-  border: 1px solid #333333;
-  border-radius: 16px;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: border-color 0.2s ease;
-}
-
-.input-container:focus-within {
-  border-color: #22c55e;
 }

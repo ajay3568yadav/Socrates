@@ -1,4 +1,4 @@
-/* ChatHeader.css - Updated with sidebar toggle button */
+/* ChatHeader.css - Updated with split pane mode support */
 .chat-header {
   padding: 16px 24px;
   border-bottom: 1px solid #333333;
@@ -36,6 +36,40 @@
 
 .sidebar-toggle-btn:active {
   transform: scale(0.95);
+}
+
+/* Split Pane Mode Indicator */
+.split-mode-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1f6feb;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+}
+
+.split-icon {
+  font-size: 14px;
+}
+
+.split-text {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Back Button (primarily for mobile) */
@@ -140,6 +174,26 @@
   transform: scale(0.9);
 }
 
+/* Exit Split View Button */
+.chat-action.exit-split {
+  background: #da3633;
+  color: white;
+  border: 1px solid #f85149;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 6px 8px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-action.exit-split:hover {
+  background: #f85149;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(248, 81, 73, 0.3);
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .chat-header {
@@ -150,6 +204,15 @@
     padding: 6px 10px;
     font-size: 14px;
     min-width: 36px;
+  }
+  
+  .split-mode-indicator {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  
+  .split-icon {
+    font-size: 12px;
   }
   
   .header-user-info {
@@ -168,6 +231,12 @@
     padding: 6px;
     font-size: 16px;
   }
+  
+  .chat-action.exit-split {
+    padding: 4px 6px;
+    min-width: 28px;
+    font-size: 12px;
+  }
 }
 
 /* Animation for toggle button */
@@ -179,4 +248,10 @@
 
 .sidebar-toggle-btn:focus {
   animation: togglePulse 0.3s ease;
+}
+
+/* Split mode header styling */
+.chat-header:has(.split-mode-indicator) {
+  background: linear-gradient(90deg, #1a1a1a 0%, #1e2028 100%);
+  border-bottom-color: #1f6feb;
 }

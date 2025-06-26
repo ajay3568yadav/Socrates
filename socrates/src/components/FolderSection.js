@@ -59,29 +59,20 @@ const FolderSection = ({ onSelectModule, selectedModuleId }) => {
         if (error.code === '42P01') {
           console.warn('Modules table does not exist. Using fallback data.');
           setModules(fallbackModules);
-          // Set first module as selected by default if none selected
-          if (!selectedModuleId && onSelectModule) {
-            onSelectModule(fallbackModules[0]?.module_id);
-          }
+          // Don't auto-select here - let the parent handle it
           return;
         }
       } else {
         setModules(data || []);
         console.log('Loaded modules from database:', data);
-        
-        // Set first module as selected by default if none selected
-        if (!selectedModuleId && data && data.length > 0 && onSelectModule) {
-          onSelectModule(data[0].module_id);
-        }
+        // Don't auto-select here - let the parent handle it
       }
     } catch (error) {
       console.error('Error loading modules:', error);
       // Use fallback data on any error
       console.log('Using fallback module data');
       setModules(fallbackModules);
-      if (!selectedModuleId && onSelectModule) {
-        onSelectModule(fallbackModules[0]?.module_id);
-      }
+      // Don't auto-select here - let the parent handle it
     } finally {
       setLoading(false);
     }

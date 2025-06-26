@@ -1,14 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Message from './Message';
-import StreamingMessage from './StreamingMessage';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
+import CodePanel from './CodePanel';
 
 const ChatView = ({ messages, isLoading, onSendMessage }) => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [streamingMessageId, setStreamingMessageId] = useState(null);
+  
+  // Code panel state
+  const [codePanelOpen, setCodePanelOpen] = useState(false);
+  const [currentCode, setCurrentCode] = useState('');
+  const [currentLanguage, setCurrentLanguage] = useState('cuda');
 
   const scrollToBottom = () => {
     // Multiple scroll methods for better compatibility
@@ -34,19 +38,28 @@ const ChatView = ({ messages, isLoading, onSendMessage }) => {
     }
   };
 
-  const handleStreamingComplete = () => {
-    setStreamingMessageId(null);
+  const handleOpenCodeEditor = (code, language = 'cuda') => {
+    setCurrentCode(code);
+    setCurrentLanguage(language);
+    setCodePanelOpen(true);
+  };
+
+  const handleCloseCodePanel = () => {
+    console.log('ChatView: Closing code panel'); // Debug log
+    setCodePanelOpen(false);
+    // Clean up any CSS variables
+    document.documentElement.style.removeProperty('--code-panel-width');
+  };
+
+  const handleCodeReview = (reviewPrompt) => {
+    if (onSendMessage) {
+      onSendMessage(reviewPrompt);
+    }
   };
 
   useEffect(() => {
     // Scroll immediately when messages change
     scrollToBottom();
-    
-    // Set streaming message ID for the latest assistant message
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && !lastMessage.isUser && !isLoading) {
-      setStreamingMessageId(lastMessage.id);
-    }
     
     // Also scroll after a short delay to handle dynamic content loading
     const timeoutId = setTimeout(() => {
@@ -61,38 +74,27 @@ const ChatView = ({ messages, isLoading, onSendMessage }) => {
     scrollToBottom();
   }, []);
 
-  // Scroll during streaming
-  useEffect(() => {
-    if (streamingMessageId) {
-      const interval = setInterval(scrollToBottom, 100);
-      return () => clearInterval(interval);
-    }
-  }, [streamingMessageId]);
-
   return (
-    <div className="chat-view">
+    <div className={`chat-view ${codePanelOpen ? 'with-code-panel' : ''}`}>
       <div 
         className="messages-container" 
         ref={messagesContainerRef}
         onScroll={handleScroll}
+        style={{ 
+          width: codePanelOpen ? 'calc(100% - var(--code-panel-width, 50%))' : '100%',
+          transition: 'width 0.3s ease'
+        }}
       >
         <div className="messages-wrapper">
-          {messages.map((message, index) => {
-            // Check if this is the latest assistant message and should be streamed
-            const shouldStream = !message.isUser && 
-                               message.id === streamingMessageId && 
-                               index === messages.length - 1;
-                               
-            return shouldStream ? (
-              <StreamingMessage 
-                key={message.id} 
-                message={message} 
-                onComplete={handleStreamingComplete}
-              />
-            ) : (
-              <Message key={message.id} message={message} />
-            );
-          })}
+          {messages.map((message) => (
+            <Message 
+              key={message.id} 
+              message={message} 
+              onSendMessage={onSendMessage}
+              isLoading={isLoading}
+              onOpenCodeEditor={handleOpenCodeEditor}
+            />
+          ))}
           
           {isLoading && <TypingIndicator />}
           <div ref={messagesEndRef} style={{ height: '1px', marginTop: '20px' }} />
@@ -110,7 +112,26 @@ const ChatView = ({ messages, isLoading, onSendMessage }) => {
         )}
       </div>
 
-      <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
+      <div 
+        className="chat-input-container"
+        style={{ 
+          width: codePanelOpen ? 'calc(100% - var(--code-panel-width, 50%))' : '100%',
+          transition: 'width 0.3s ease'
+        }}
+      >
+        <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
+      </div>
+
+      {/* Code Panel */}
+      <CodePanel
+        isOpen={codePanelOpen}
+        onClose={handleCloseCodePanel}
+        initialCode={currentCode}
+        language={currentLanguage}
+        onSendForReview={handleCodeReview}
+        isLoading={isLoading}
+        title={`${currentLanguage.toUpperCase()} Code Editor`}
+      />
     </div>
   );
 };

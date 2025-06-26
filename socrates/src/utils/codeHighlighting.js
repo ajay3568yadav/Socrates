@@ -1,53 +1,54 @@
-// Syntax highlighting function for CUDA/C++ code
+// Simple CUDA code highlighting utility
 export const highlightCudaCode = (code) => {
-  // CUDA/C++ keywords
-  const keywords = [
-    '__global__', '__device__', '__host__', '__shared__', '__constant__',
-    'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue', 'return',
-    'int', 'float', 'double', 'char', 'bool', 'void', 'auto', 'const', 'static', 'extern',
-    'struct', 'class', 'enum', 'typedef', 'sizeof', 'namespace', 'using',
-    'cudaMalloc', 'cudaFree', 'cudaMemcpy', 'cudaDeviceSynchronize', 'cudaGetLastError',
-    'blockIdx', 'blockDim', 'threadIdx', 'gridDim', '__syncthreads'
+  if (!code) return '';
+
+  // CUDA-specific keywords and functions
+  const patterns = [
+    // CUDA qualifiers
+    { regex: /\b(__global__|__device__|__host__|__shared__|__constant__)\b/g, class: 'code-keyword' },
+    
+    // CUDA built-in variables
+    { regex: /\b(threadIdx|blockIdx|blockDim|gridDim)\b/g, class: 'code-function-call' },
+    
+    // CUDA functions
+    { regex: /\b(__syncthreads|__threadfence|__threadfence_block|__threadfence_system)\b/g, class: 'code-function' },
+    
+    // Memory functions
+    { regex: /\b(cudaMalloc|cudaFree|cudaMemcpy|cudaMemset|cudaMemcpyHostToDevice|cudaMemcpyDeviceToHost)\b/g, class: 'code-function' },
+    
+    // Standard C/C++ keywords
+    { regex: /\b(int|float|double|char|void|bool|if|else|for|while|do|switch|case|break|continue|return|sizeof|typedef|struct|union|enum|const|static|extern|inline)\b/g, class: 'code-keyword' },
+    
+    // Preprocessor directives
+    { regex: /^#\s*(include|define|ifdef|ifndef|endif|pragma|undef|if|else|elif)\b.*$/gm, class: 'code-preprocessor' },
+    
+    // Numbers
+    { regex: /\b\d+\.?\d*[fF]?\b/g, class: 'code-number' },
+    
+    // Strings
+    { regex: /"([^"\\]|\\.)*"/g, class: 'code-string' },
+    { regex: /'([^'\\]|\\.)*'/g, class: 'code-string' },
+    
+    // Comments
+    { regex: /\/\/.*$/gm, class: 'code-comment' },
+    { regex: /\/\*[\s\S]*?\*\//g, class: 'code-comment' },
+    
+    // Operators
+    { regex: /[+\-*/%=<>!&|^~?:]/g, class: 'code-operator' },
+    
+    // Brackets and parentheses
+    { regex: /[(){}\[\]]/g, class: 'code-bracket' },
   ];
 
-  // CUDA functions and types
-  const cudaFunctions = [
-    'cudaEventCreate', 'cudaEventRecord', 'cudaEventSynchronize', 'cudaEventElapsedTime',
-    'cudaEventDestroy', 'cudaMallocManaged', 'cudaMemcpyAsync', 'cudaStreamCreate',
-    'cudaStreamSynchronize', 'cudaStreamDestroy', 'cudaGetDeviceProperties',
-    'dim3', 'cudaError_t', 'cudaStream_t', 'cudaEvent_t'
-  ];
+  let highlightedCode = code;
 
-  // Numbers and operators
-  let highlighted = code
-    // Comments (green)
-    .replace(/(\/\/.*$)/gm, '<span class="code-comment">$1</span>')
-    .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>')
-    
-    // Strings (yellow)
-    .replace(/(".*?")/g, '<span class="code-string">$1</span>')
-    .replace(/('.*?')/g, '<span class="code-string">$1</span>')
-    
-    // Numbers (cyan)
-    .replace(/\b(\d+\.?\d*[fF]?)\b/g, '<span class="code-number">$1</span>')
-    
-    // Preprocessor directives (magenta)
-    .replace(/(#\w+)/g, '<span class="code-preprocessor">$1</span>')
-    
-    // CUDA-specific keywords (bright blue)
-    .replace(new RegExp(`\\b(${keywords.join('|')})\\b`, 'g'), '<span class="code-keyword">$1</span>')
-    
-    // CUDA functions (orange)
-    .replace(new RegExp(`\\b(${cudaFunctions.join('|')})\\b`, 'g'), '<span class="code-function">$1</span>')
-    
-    // Function calls (light blue)
-    .replace(/\b(\w+)(\s*\()/g, '<span class="code-function-call">$1</span>$2')
-    
-    // Operators (white/gray)
-    .replace(/([+\-*/%=<>!&|^~])/g, '<span class="code-operator">$1</span>')
-    
-    // Brackets and parentheses (bright white)
-    .replace(/([(){}\[\]])/g, '<span class="code-bracket">$1</span>');
+  // Apply syntax highlighting
+  patterns.forEach(pattern => {
+    highlightedCode = highlightedCode.replace(
+      pattern.regex,
+      `<span class="${pattern.class}">$&</span>`
+    );
+  });
 
-  return highlighted;
+  return highlightedCode;
 };

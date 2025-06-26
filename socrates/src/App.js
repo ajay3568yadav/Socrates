@@ -193,8 +193,11 @@ const CudaTutorApp = () => {
     if (user) {
       console.log('User authenticated, starting backend status checks');
       
-      // Load user's chats (without module filter initially)
-      loadChats();
+      // Set default module if none selected
+      if (!selectedModuleId) {
+        console.log('No module selected, setting default CUDA Basics module');
+        setSelectedModuleId('c801ac6c-1232-4c96-89b1-c4eadf41026c'); // Default CUDA Basics module
+      }
       
       // Initial check
       checkBackendStatus();
@@ -212,7 +215,7 @@ const CudaTutorApp = () => {
         statusIntervalRef.current = null;
       }
     };
-  }, [user]); // Only re-run when user changes
+  }, [user, selectedModuleId]); // Re-run when user or selectedModuleId changes
 
   // ==================== MESSAGE PERSISTENCE FUNCTIONS ====================
 
@@ -510,13 +513,13 @@ const CudaTutorApp = () => {
     createNewChat();
   };
 
-  // Re-load chats when selectedModuleId changes
+  // Load chats when selectedModuleId changes or when user is authenticated
   useEffect(() => {
     if (user && selectedModuleId) {
-      console.log('Selected module changed, reloading chats for:', selectedModuleId);
+      console.log('User and module ready, loading chats for module:', selectedModuleId);
       loadChats(selectedModuleId);
     }
-  }, [selectedModuleId, user]); // loadChats is stable, no need to include it
+  }, [selectedModuleId, user]);
 
   // ==================== MESSAGE HANDLING FUNCTIONS ====================
 

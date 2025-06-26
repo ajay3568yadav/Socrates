@@ -367,7 +367,8 @@ const CudaTutorApp = () => {
         body: JSON.stringify({
           message: message,
           session_id: sessionId,
-          chat_id: currentChatId
+          chat_id: currentChatId,
+          stream: false  // Explicitly set to false for now
         }),
       });
 
@@ -375,58 +376,18 @@ const CudaTutorApp = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
+      // Handle non-streaming response
+      const data = await response.json();
+      
       const assistantMessage = {
         id: Date.now() + '_assistant',
         role: 'assistant',
-        content: '', // Initialize with empty string, not undefined
+        content: data.response || 'Sorry, I received an empty response.',
         timestamp: new Date().toISOString(),
-        isStreaming: true
+        isStreaming: false
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.content) {
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === assistantMessage.id 
-                      ? { 
-                          ...msg, 
-                          content: (msg.content || '') + (data.content || '') // Ensure both are strings
-                        }
-                      : msg
-                  )
-                );
-              }
-            } catch (e) {
-              console.error('Error parsing streaming data:', e);
-            }
-          }
-        }
-      }
-
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === assistantMessage.id 
-            ? { ...msg, isStreaming: false }
-            : msg
-        )
-      );
 
     } catch (error) {
       console.error('Error sending message:', error);

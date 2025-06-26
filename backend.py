@@ -15,6 +15,7 @@ from datasets import load_dataset
 import os
 import json
 import time
+import re
 
 # Create Flask app first
 app = Flask(__name__)
@@ -79,11 +80,27 @@ class SimpleRAG:
         results = [self.knowledge[i] for i in top_indices]
         return results
     
-    def generate_response(self, query, conversation_context="", stream=False):
+    def generate_response(self, query, conversation_context="", stream=False, is_code_analysis=False, code_blocks=None):
         """Generate response using RAG with conversation context"""
         
+        # Use provided code analysis info or detect it
+        if code_blocks is None:
+            try:
+                is_code_analysis, code_blocks = detect_code_analysis_request(query)
+            except Exception as e:
+                print(f"Error in code analysis detection inside RAG: {e}")
+                is_code_analysis, code_blocks = False, []
+        
+        # Ensure code_blocks is always a list
+        if code_blocks and not isinstance(code_blocks, list):
+            try:
+                code_blocks = list(code_blocks)
+            except Exception as e:
+                print(f"Error converting code_blocks to list: {e}")
+                code_blocks = []
+        
         # 1. Retrieve relevant examples
-        examples = self.search(query, top_k=2)
+        examples = self.search(query, top_k=3 if is_code_analysis else 2)
         
         # 2. Create context from examples
         if examples:
@@ -94,33 +111,42 @@ class SimpleRAG:
         else:
             example_context = "General CUDA programming knowledge."
         
-        if conversation_context:
-            prompt = f"""You are a helpful CUDA programming tutor. Build on our previous conversation.
+        # 3. Create specialized prompts for code analysis
+        if is_code_analysis and code_blocks and len(code_blocks) > 0:
+            # Safely get the first code block
+            code_to_analyze = code_blocks[0] if isinstance(code_blocks, list) and len(code_blocks) > 0 else "No code found"
+            
+            code_analysis_prompt = f"""You are an expert CUDA performance analyst. Analyze the provided code and give specific optimization recommendations.
 
-Previous conversation:
-{conversation_context}
-
-Relevant CUDA examples:
+CUDA Performance Knowledge:
 {example_context}
 
-Current question: {query}
+Code to analyze:
+{code_to_analyze}
 
-Answer the current question, referencing our previous discussion when relevant. Be conversational and remember what we've discussed:"""
+Analysis guidelines:
+1. Identify potential performance bottlenecks
+2. Suggest memory optimization techniques (coalesced access, shared memory usage)
+3. Recommend thread block size and grid configuration improvements
+4. Point out opportunities for better parallelization
+5. Suggest CUDA-specific optimizations (__shared__, __constant__, etc.)
+6. Provide concrete code improvements with explanations
+
+Student's request: {query}
+
+Provide a detailed analysis with specific, actionable recommendations:"""
+            
+            prompt = code_analysis_prompt
+        elif conversation_context:
+            prompt = f"""You are a helpful CUDA programming tutor. Build on our previous conversation.\n\nPrevious conversation:\n{conversation_context}\n\nRelevant CUDA examples:\n{example_context}\n\nCurrent question: {query}\n\nAnswer the current question, referencing our previous discussion when relevant. Be conversational and remember what we've discussed:"""
         else:
-            prompt = f"""You are a helpful CUDA programming tutor. Answer concisely and clearly.
-
-Relevant examples:
-{example_context}
-
-Student question: {query}
-
-Provide a helpful answer:"""
+            prompt = f"""You are a helpful CUDA programming tutor. Answer concisely and clearly.\n\nRelevant examples:\n{example_context}\n\nStudent question: {query}\n\nProvide a helpful answer:"""
         
         # 4. Generate response with improved settings
         try:
             response = requests.post("http://localhost:11434/api/generate", 
                 json={
-                    "model": "llama3.2:latest",
+                    "model": "deepseek-coder:1.3b",
                     "prompt": prompt,
                     "stream": stream,  # Enable streaming if requested
                     "options": {
@@ -138,19 +164,16 @@ Provide a helpful answer:"""
             
             if response.status_code == 200:
                 if stream:
-                    # Handle streaming response (for future implementation)
-                    full_response = ""
                     for line in response.iter_lines():
                         if line:
                             try:
                                 chunk = json.loads(line.decode('utf-8'))
                                 if 'response' in chunk:
-                                    full_response += chunk['response']
+                                    yield chunk['response']
                                 if chunk.get('done', False):
                                     break
                             except json.JSONDecodeError:
                                 continue
-                    return full_response
                 else:
                     result = response.json()
                     generated_text = result.get("response", "").strip()
@@ -172,9 +195,11 @@ Provide a helpful answer:"""
                 return f"I'm having trouble connecting to the AI model. Status: {response.status_code}"
                 
         except requests.exceptions.Timeout:
-            return "The AI model is taking too long to respond. Please try a simpler question."
+            if stream: yield "The AI model is taking too long to respond. Please try a simpler question."
+            else: return "The AI model is taking too long to respond. Please try a simpler question."
         except requests.exceptions.ConnectionError:
-            return "Cannot connect to the AI model. Please make sure Ollama is running with: `ollama serve`"
+            if stream: yield "Cannot connect to the AI model. Please make sure Ollama is running with: `ollama serve`"
+            else: return "Cannot connect to the AI model. Please make sure Ollama is running with: `ollama serve`"
         except Exception as e:
             return f"An error occurred: {str(e)}"
 
@@ -196,6 +221,38 @@ def get_conversation_context(session_history, max_exchanges=3):
         context_parts.append(f"Assistant: {assistant_msg}")
     
     return "\n".join(context_parts)
+
+def detect_code_analysis_request(query):
+    """Detect if the query contains code for analysis"""
+    try:
+        # Check for code blocks
+        code_block_pattern = r'```[\w]*\n?([\s\S]*?)```'
+        code_matches = re.findall(code_block_pattern, query)
+        
+        # Always ensure we return a proper list
+        code_blocks = []
+        if code_matches:
+            for match in code_matches:
+                if isinstance(match, (str, tuple)):
+                    code_blocks.append(match)
+        
+        # Check for analysis request keywords
+        analysis_keywords = [
+            'analyze', 'feedback', 'review', 'optimize', 'improve', 'suggestions',
+            'performance', 'gpu', 'cuda', 'parallel', 'efficiency', 'bottleneck',
+            'memory', 'thread', 'block', 'kernel', 'speedup'
+        ]
+        
+        query_lower = str(query).lower()
+        has_analysis_intent = any(keyword in query_lower for keyword in analysis_keywords)
+        
+        # Always return a boolean and a list
+        return bool(len(code_blocks) > 0 and has_analysis_intent), code_blocks
+    except Exception as e:
+        print(f"Error in detect_code_analysis_request: {e}")
+        import traceback
+        traceback.print_exc()
+        return False, []
 
 def detect_follow_up_question(current_query, last_response=""):
     """Detect if current query is a follow-up to previous conversation - ENHANCED"""
@@ -285,16 +342,84 @@ def chat():
         # Build conversation context - ALWAYS use context now
         conversation_context = get_conversation_context(session_history, max_exchanges=3)
         
-        # Check if this is a follow-up question
+        # Check if this is a follow-up question or code analysis request
         is_follow_up = detect_follow_up_question(message)
+        
+        # Initialize with safe defaults
+        is_code_analysis = False
+        code_blocks = []
+        
+        try:
+            print(f"🔍 Detecting code analysis for: {message[:50]}...")
+            result = detect_code_analysis_request(message)
+            
+            if isinstance(result, tuple) and len(result) == 2:
+                is_code_analysis, code_blocks = result
+                # Force code_blocks to be a list
+                if not isinstance(code_blocks, list):
+                    code_blocks = list(code_blocks) if code_blocks else []
+            else:
+                print(f"Unexpected result format from detect_code_analysis_request: {result}")
+                is_code_analysis, code_blocks = False, []
+            
+            print(f"✅ Code analysis detection successful: {is_code_analysis}, blocks: {len(code_blocks)}")
+        except Exception as e:
+            print(f"❌ Error in code analysis detection: {e}")
+            import traceback
+            traceback.print_exc()
+            is_code_analysis, code_blocks = False, []
         
         # Generate response with context
         if rag_system:
             # Always use conversation context if available
-            response = rag_system.generate_response(message, conversation_context, stream=stream)
+            try:
+                if stream:
+                    def generate():
+                        full_response_content = ""
+                        try:
+                            for chunk in rag_system.generate_response(message, conversation_context, stream=True, is_code_analysis=is_code_analysis, code_blocks=code_blocks):
+                                full_response_content += chunk
+                                yield chunk
+                        except Exception as e:
+                            print(f"❌ Error during streaming generation: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            yield f"Error generating response: {str(e)}"
+                        
+                        # Save to session history after streaming is complete
+                        session_history.append({
+                            'user': message,
+                            'assistant': full_response_content,
+                            'timestamp': time.time(),
+                            'is_follow_up': is_follow_up,
+                            'is_code_analysis': is_code_analysis
+                        })
+                        if len(session_history) > 10:
+                            conversation_sessions[session_id] = session_history[-10:]
+                        print(f" Session {session_id}: {full_response_content[:100]}...")
+                        print(f" Context used: {bool(conversation_context)}")
+                        print(f"🔗 Follow-up detected: {is_follow_up}")
+                        print(f"⚡ Code analysis detected: {is_code_analysis}")
+                        if is_code_analysis:
+                            try:
+                                code_blocks_count = len(list(code_blocks)) if code_blocks else 0
+                                print(f"📝 Code blocks found: {code_blocks_count}")
+                            except Exception as e:
+                                print(f"Error getting code blocks count in streaming: {e}")
+
+                    return app.response_class(generate(), mimetype='text/plain')
+                else:
+                    print(f"🚀 Generating non-streaming response...")
+                    response_content = rag_system.generate_response(message, conversation_context, stream=False, is_code_analysis=is_code_analysis, code_blocks=code_blocks)
+                    print(f"✅ Response generated successfully: {len(response_content) if response_content else 0} chars")
+            except Exception as e:
+                print(f"❌ Error in RAG system generation: {e}")
+                import traceback
+                traceback.print_exc()
+                response_content = f"Sorry, I encountered an error processing your request: {str(e)}"
         else:
             # Fallback response
-            response = """I apologize, but the RAG system isn't fully initialized. Here's a basic response:
+            response_content = """I apologize, but the RAG system isn't fully initialized. Here's a basic response:
 
 CUDA (Compute Unified Device Architecture) is NVIDIA's parallel computing platform and programming model. It allows developers to use NVIDIA GPUs for general-purpose computing tasks, often achieving significant speedups for parallelizable problems.
 
@@ -312,23 +437,37 @@ To get started with CUDA programming, you'll need:
         # Save to session history
         session_history.append({
             'user': message,
-            'assistant': response,
+            'assistant': response_content,
             'timestamp': time.time(),
-            'is_follow_up': is_follow_up
+            'is_follow_up': is_follow_up,
+            'is_code_analysis': is_code_analysis
         })
         
         # Keep only the last 10 exchanges per session to prevent memory bloat
         if len(session_history) > 10:
             conversation_sessions[session_id] = session_history[-10:]
         
-        print(f" Session {session_id}: {response[:100]}...")
+        print(f" Session {session_id}: {response_content[:100]}...")
         print(f" Context used: {bool(conversation_context)}")
         print(f"🔗 Follow-up detected: {is_follow_up}")
+        print(f"⚡ Code analysis detected: {is_code_analysis}")
+        if is_code_analysis:
+            # Safely get length of code_blocks
+            try:
+                code_blocks_count = len(list(code_blocks)) if code_blocks else 0
+                print(f"📝 Code blocks found: {code_blocks_count}")
+            except Exception as e:
+                print(f"Error getting code blocks count: {e}")
+                code_blocks_count = 0
+        else:
+            code_blocks_count = 0
         
         return jsonify({
-            'response': response,
+            'response': response_content,
             'session_id': session_id,
             'is_follow_up': is_follow_up,
+            'is_code_analysis': is_code_analysis,
+            'code_blocks_count': code_blocks_count,
             'context_used': bool(conversation_context),
             'status': 'success'
         })

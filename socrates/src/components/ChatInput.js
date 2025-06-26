@@ -50,7 +50,6 @@ const ChatInput = ({ onSendMessage, isLoading }) => {
               disabled={!inputValue.trim() || isLoading}
               className="send-btn"
             >
-              →
             </button>
           </div>
         </div>

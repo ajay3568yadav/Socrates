@@ -17,6 +17,8 @@ const CudaTutorApp = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedModuleId, setSelectedModuleId] = useState(null);
+
   
   // Chat Management State
   const [currentChatId, setCurrentChatId] = useState(null);
@@ -489,6 +491,8 @@ const CudaTutorApp = () => {
         user={user}
         onLogout={handleLogout}
         onRefreshBackend={checkBackendStatus}
+        onSelectModule={setSelectedModuleId}
+        selectedModuleId={selectedModuleId}
       />
 
       {/* Main Content */}

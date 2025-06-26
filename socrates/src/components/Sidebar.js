@@ -13,7 +13,9 @@ const Sidebar = ({
   backendStatus, 
   user, 
   onLogout, 
-  onRefreshBackend 
+  onRefreshBackend ,
+  onSelectModule,
+  selectedModuleId
 }) => {
   const sidebarClass = `sidebar ${isOpen ? 'mobile-visible' : 'mobile-hidden'}`;
 
@@ -85,8 +87,11 @@ const Sidebar = ({
       </div>
 
       <div className="sidebar-content">
-        <FolderSection />
-        <ChatsSection 
+        <FolderSection
+          onSelectModule={onSelectModule}
+          selectedModuleId={selectedModuleId}
+        />
+        <ChatsSection
           chats={chats}
           loadingChats={loadingChats}
           currentChatId={currentChatId}

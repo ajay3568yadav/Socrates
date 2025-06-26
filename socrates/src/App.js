@@ -19,7 +19,6 @@ const CudaTutorApp = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState(null);
 
-  
   // Chat Management State
   const [currentChatId, setCurrentChatId] = useState(null);
   const [chats, setChats] = useState([]);
@@ -116,6 +115,7 @@ const CudaTutorApp = () => {
         setCurrentChatId(null);
         setChats([]);
         setSidebarOpen(false);
+        setSelectedModuleId(null);
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -193,7 +193,7 @@ const CudaTutorApp = () => {
     if (user) {
       console.log('User authenticated, starting backend status checks');
       
-      // Load user's chats
+      // Load user's chats (without module filter initially)
       loadChats();
       
       // Initial check
@@ -214,20 +214,156 @@ const CudaTutorApp = () => {
     };
   }, [user]); // Only re-run when user changes
 
+  // ==================== MESSAGE PERSISTENCE FUNCTIONS ====================
+
+  // Save a message to the Messages table
+  const saveMessage = async (chatId, sender, content, orderIndex) => {
+    if (!chatId) {
+      console.error('Cannot save message: chatId is null');
+      return null;
+    }
+
+    try {
+      const messageData = {
+        chat_id: chatId,
+        sender: sender, // 'user' or 'assistant'
+        content: content,
+        order_index: orderIndex,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('Saving message:', messageData);
+
+      const { data, error } = await supabase
+        .from('Messages')
+        .insert([messageData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving message:', error);
+        return null;
+      }
+
+      console.log('Message saved successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('Error saving message:', error);
+      return null;
+    }
+  };
+
+  // Load messages for a specific chat
+  const loadChatMessages = async (chatId) => {
+    if (!chatId) {
+      console.error('Cannot load messages: chatId is null');
+      return [];
+    }
+
+    try {
+      console.log('Loading messages for chat:', chatId);
+
+      const { data, error } = await supabase
+        .from('Messages')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('order_index', { ascending: true });
+
+      if (error) {
+        console.error('Error loading messages:', error);
+        return [];
+      }
+
+      // Convert database messages to app message format
+      const formattedMessages = data.map(msg => ({
+        id: `${msg.message_id}_${msg.sender}`,
+        role: msg.sender,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        messageId: msg.message_id,
+        orderIndex: msg.order_index
+      }));
+
+      console.log('Loaded messages for chat:', chatId, formattedMessages);
+      return formattedMessages;
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      return [];
+    }
+  };
+
+  // Create a new chat when user sends first message
+  const createNewChatForMessage = async (userMessage) => {
+    if (!user) {
+      console.error('Cannot create chat: user is null');
+      return null;
+    }
+
+    try {
+      // Generate a title from the first message (first 50 characters)
+      const heading = userMessage.length > 50 
+        ? userMessage.substring(0, 50) + '...' 
+        : userMessage;
+
+      const newChat = {
+        user_id: user.id,
+        heading: heading,
+        description: 'Chat conversation',
+        timestamp: new Date().toISOString(),
+        course_id: '1e44eb02-8daa-44a0-a7ee-28f88ce6863f', // Default CUDA Basics course
+        module_id: selectedModuleId || 'c801ac6c-1232-4c96-89b1-c4eadf41026c', // Use selected module or default
+        status: 'active'
+      };
+
+      console.log('Creating new chat for message:', newChat);
+
+      const { data, error } = await supabase
+        .from('Chats')
+        .insert([newChat])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating new chat:', error);
+        return null;
+      }
+
+      // Add the new chat to the list and make it active
+      setChats(prevChats => [data, ...prevChats]);
+      setCurrentChatId(data.chat_id);
+      
+      console.log('New chat created for message:', data);
+      return data;
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+      return null;
+    }
+  };
+
   // ==================== CHAT MANAGEMENT FUNCTIONS ====================
 
-  // Load user's chats from Supabase
-  const loadChats = async () => {
+  // Load user's chats from Supabase (filtered by module if selected)
+  const loadChats = async (moduleId = null) => {
     if (!user) return;
     
     try {
       setLoadingChats(true);
-      // Use the correct table name 'Chats' with capital C
-      const { data, error } = await supabase
+      const filterModuleId = moduleId || selectedModuleId;
+      
+      console.log('Loading chats for user:', user.id, 'module:', filterModuleId);
+
+      let query = supabase
         .from('Chats')
         .select('*')
-        .eq('user_id', user.id)
-        .order('timestamp', { ascending: false });
+        .eq('user_id', user.id);
+
+      // If a module is selected, filter chats by module_id
+      if (filterModuleId) {
+        query = query.eq('module_id', filterModuleId);
+        console.log('Filtering chats by module_id:', filterModuleId);
+      }
+
+      const { data, error } = await query.order('timestamp', { ascending: false });
 
       if (error) {
         console.error('Error loading chats:', error);
@@ -235,22 +371,22 @@ const CudaTutorApp = () => {
         // Handle specific error for missing table
         if (error.code === '42P01') {
           console.warn('Chats table does not exist. Please create it in Supabase first.');
-          setChats([]); // Set empty array instead of causing app crash
+          setChats([]);
           return;
         }
       } else {
         setChats(data || []);
-        console.log('Loaded chats:', data);
+        console.log('Loaded chats for module:', filterModuleId, 'count:', data?.length || 0);
       }
     } catch (error) {
       console.error('Error loading chats:', error);
-      setChats([]); // Fallback to empty array
+      setChats([]);
     } finally {
       setLoadingChats(false);
     }
   };
 
-  // Create a new chat
+  // Create a new empty chat
   const createNewChat = async () => {
     if (!user) return;
 
@@ -260,10 +396,12 @@ const CudaTutorApp = () => {
         heading: 'New Chat',
         description: 'Start a new conversation about CUDA programming',
         timestamp: new Date().toISOString(),
-        course_id: '1e44eb02-8daa-44a0-a7ee-28f88ce6863f', // Default CUDA Basics course
-        module_id: 'c801ac6c-1232-4c96-89b1-c4eadf41026c', // Default CUDA Basics module
+        course_id: '1e44eb02-8daa-44a0-a7ee-28f88ce6863f',
+        module_id: selectedModuleId || 'c801ac6c-1232-4c96-89b1-c4eadf41026c',
         status: 'active'
       };
+
+      console.log('Creating new empty chat:', newChat);
 
       const { data, error } = await supabase
         .from('Chats')
@@ -279,28 +417,38 @@ const CudaTutorApp = () => {
       // Add the new chat to the list
       setChats(prevChats => [data, ...prevChats]);
       
-      // Switch to the new chat
+      // Switch to the new chat with empty messages
       setCurrentChatId(data.chat_id);
       setMessages([]);
       setCurrentView('chat');
       
-      console.log('New chat created:', data);
+      console.log('New empty chat created:', data);
     } catch (error) {
       console.error('Error creating chat:', error);
     }
   };
 
-  // Select a chat from the sidebar
+  // Select a chat from the sidebar and load its messages
   const selectChat = async (chatId) => {
+    console.log('Selecting chat:', chatId);
     setCurrentChatId(chatId);
     setCurrentView('chat');
-    // For now, we'll start with empty messages
-    // Later you can load messages from the Messages table
-    setMessages([]);
-    console.log('Selected chat:', chatId);
+    setIsLoading(true);
+
+    try {
+      // Load messages for this chat
+      const chatMessages = await loadChatMessages(chatId);
+      setMessages(chatMessages);
+      console.log('Chat selected and messages loaded:', chatId);
+    } catch (error) {
+      console.error('Error selecting chat:', error);
+      setMessages([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Update chat heading based on first message
+  // Update chat heading and timestamp
   const updateChatTitle = async (chatId, firstMessage) => {
     if (!chatId || !firstMessage) return;
 
@@ -309,6 +457,8 @@ const CudaTutorApp = () => {
       const heading = firstMessage.length > 50 
         ? firstMessage.substring(0, 50) + '...' 
         : firstMessage;
+
+      console.log('Updating chat title:', chatId, heading);
 
       const { error } = await supabase
         .from('Chats')
@@ -336,19 +486,58 @@ const CudaTutorApp = () => {
     }
   };
 
+  // Handle module selection and load associated chats
+  const handleSelectModule = async (moduleId) => {
+    console.log('Module selected:', moduleId);
+    setSelectedModuleId(moduleId);
+    
+    // Clear current chat if it doesn't belong to the selected module
+    if (currentChatId) {
+      const currentChat = chats.find(chat => chat.chat_id === currentChatId);
+      if (currentChat && currentChat.module_id !== moduleId) {
+        setCurrentChatId(null);
+        setMessages([]);
+        setCurrentView('welcome');
+      }
+    }
+    
+    // Load chats for the selected module
+    await loadChats(moduleId);
+  };
+
   // Start a new chat
   const startNewChat = () => {
     createNewChat();
   };
 
+  // Re-load chats when selectedModuleId changes
+  useEffect(() => {
+    if (user && selectedModuleId) {
+      console.log('Selected module changed, reloading chats for:', selectedModuleId);
+      loadChats(selectedModuleId);
+    }
+  }, [selectedModuleId, user]); // loadChats is stable, no need to include it
+
   // ==================== MESSAGE HANDLING FUNCTIONS ====================
 
   const sendMessage = async (message) => {
-    // Update chat title if this is the first message
-    if (currentChatId && messages.length === 0) {
-      updateChatTitle(currentChatId, message);
+    console.log('Sending message:', message);
+    let chatId = currentChatId;
+    let orderIndex = messages.length;
+
+    // If no current chat, create a new one
+    if (!chatId) {
+      console.log('No current chat, creating new chat...');
+      const newChat = await createNewChatForMessage(message);
+      if (!newChat) {
+        console.error('Failed to create new chat');
+        return;
+      }
+      chatId = newChat.chat_id;
+      orderIndex = 0; // First message in new chat
     }
 
+    // Create user message object
     const userMessage = {
       id: Date.now() + '_user',
       role: 'user',
@@ -356,11 +545,24 @@ const CudaTutorApp = () => {
       timestamp: new Date().toISOString()
     };
 
+    // Add user message to UI immediately
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     setCurrentView('chat');
 
+    // Save user message to database
+    const savedUserMessage = await saveMessage(chatId, 'user', message, orderIndex);
+    if (savedUserMessage) {
+      console.log('User message saved to database');
+    }
+
+    // Update chat title if this is the first message
+    if (orderIndex === 0) {
+      await updateChatTitle(chatId, message);
+    }
+
     try {
+      // Send message to backend API
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
@@ -369,8 +571,9 @@ const CudaTutorApp = () => {
         body: JSON.stringify({
           message: message,
           session_id: sessionId,
-          chat_id: currentChatId,
-          stream: false  // Explicitly set to false for now
+          chat_id: chatId,
+          module_id: selectedModuleId,
+          stream: false
         }),
       });
 
@@ -378,7 +581,6 @@ const CudaTutorApp = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Handle non-streaming response
       const data = await response.json();
       
       const assistantMessage = {
@@ -389,7 +591,14 @@ const CudaTutorApp = () => {
         isStreaming: false
       };
 
+      // Add assistant message to UI
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Save assistant message to database
+      const savedAssistantMessage = await saveMessage(chatId, 'assistant', assistantMessage.content, orderIndex + 1);
+      if (savedAssistantMessage) {
+        console.log('Assistant message saved to database');
+      }
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -403,6 +612,9 @@ const CudaTutorApp = () => {
       };
 
       setMessages(prev => [...prev, errorMessage]);
+      
+      // Save error message to database
+      await saveMessage(chatId, 'assistant', errorMessage.content, orderIndex + 1);
     } finally {
       setIsLoading(false);
     }
@@ -429,6 +641,8 @@ const CudaTutorApp = () => {
   }
 
   console.log('Current user:', user);
+  console.log('Current chat ID:', currentChatId);
+  console.log('Selected module ID:', selectedModuleId);
 
   // Main authenticated app
   return (
@@ -452,7 +666,7 @@ const CudaTutorApp = () => {
         user={user}
         onLogout={handleLogout}
         onRefreshBackend={checkBackendStatus}
-        onSelectModule={setSelectedModuleId}
+        onSelectModule={handleSelectModule}
         selectedModuleId={selectedModuleId}
       />
 

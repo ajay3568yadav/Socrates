@@ -15,22 +15,6 @@ from datasets import load_dataset
 import os
 import json
 import time
-import psutil
-import threading
-from collections import deque
-
-# GPU monitoring imports
-try:
-    import GPUtil
-    GPU_AVAILABLE = True
-except ImportError:
-    GPU_AVAILABLE = False
-
-try:
-    import torch
-    TORCH_AVAILABLE = True
-except ImportError:
-    TORCH_AVAILABLE = False
 
 # Create Flask app first
 app = Flask(__name__)
@@ -39,179 +23,6 @@ app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"])
 
 conversation_sessions = {}
-
-# System monitoring variables
-cpu_readings = deque(maxlen=10)  # Store last 10 CPU readings for averaging
-memory_readings = deque(maxlen=10)  # Store last 10 memory readings for averaging
-
-def get_system_metrics():
-    """Get current system memory and CPU usage"""
-    try:
-        # Get memory usage
-        memory = psutil.virtual_memory()
-        memory_usage_mb = memory.used / (1024 * 1024)  # Convert to MB
-        memory_usage_gb = memory_usage_mb / 1024  # Convert to GB
-        memory_percent = memory.percent
-        
-        # Get CPU usage
-        cpu_percent = psutil.cpu_percent(interval=0.1)
-        
-        return {
-            'memory_mb': round(memory_usage_mb, 2),
-            'memory_gb': round(memory_usage_gb, 2),
-            'memory_percent': round(memory_percent, 1),
-            'cpu_percent': round(cpu_percent, 1)
-        }
-    except Exception as e:
-        print(f"⚠️ Error getting system metrics: {e}")
-        return {
-            'memory_mb': 0,
-            'memory_gb': 0,
-            'memory_percent': 0,
-            'cpu_percent': 0
-        }
-
-def get_average_cpu_usage():
-    """Get average CPU usage from recent readings"""
-    if not cpu_readings:
-        return 0
-    return round(sum(cpu_readings) / len(cpu_readings), 1)
-
-def get_average_memory_usage():
-    """Get average memory usage from recent readings"""
-    if not memory_readings:
-        return 0
-    return round(sum(memory_readings) / len(memory_readings), 1)
-
-def update_system_readings():
-    """Update system readings for averaging"""
-    metrics = get_system_metrics()
-    cpu_readings.append(metrics['cpu_percent'])
-    memory_readings.append(metrics['memory_percent'])
-
-def print_system_usage():
-    """Print current system usage to terminal"""
-    metrics = get_system_metrics()
-    avg_cpu = get_average_cpu_usage()
-    avg_memory = get_average_memory_usage()
-    
-    print("=" * 60)
-    print("🖥️  SYSTEM USAGE METRICS")
-    print("=" * 60)
-    print(f"💾 Memory Usage: {metrics['memory_gb']:.2f} GB ({metrics['memory_percent']:.1f}%)")
-    print(f"📊 Average Memory (last 10): {avg_memory:.1f}%")
-    print(f"⚡ CPU Usage: {metrics['cpu_percent']:.1f}%")
-    print(f"📈 Average CPU (last 10): {avg_cpu:.1f}%")
-    print("=" * 60)
-
-def get_gpu_info():
-    """Get GPU information including CUDA availability and memory usage"""
-    gpu_info = {
-        'cuda_available': False,
-        'gpu_count': 0,
-        'gpu_model': 'None',
-        'gpu_memory_used_gb': 0,
-        'gpu_memory_total_gb': 0,
-        'gpu_memory_percent': 0,
-        'gpu_utilization_percent': 0
-    }
-    
-    # First try GPUtil for comprehensive system-wide GPU info
-    if GPU_AVAILABLE:
-        try:
-            gpus = GPUtil.getGPUs()
-            if gpus:
-                gpu = gpus[0]  # Get first GPU
-                gpu_info['gpu_model'] = gpu.name
-                gpu_info['gpu_utilization_percent'] = round(gpu.load * 100, 1)
-                # Fix memory conversion - GPUtil gives MB, convert to GB
-                gpu_info['gpu_memory_total_gb'] = round(gpu.memoryTotal / 1024, 2)
-                gpu_info['gpu_memory_used_gb'] = round(gpu.memoryUsed / 1024, 2)
-                gpu_info['gpu_memory_percent'] = round((gpu.memoryUsed / gpu.memoryTotal) * 100, 1)
-                gpu_info['gpu_count'] = len(gpus)
-                print(f"🎮 GPUtil readings: {gpu_info['gpu_memory_used_gb']:.2f}/{gpu_info['gpu_memory_total_gb']:.2f} GB ({gpu_info['gpu_memory_percent']:.1f}%)")
-        except Exception as e:
-            print(f"⚠️ GPUtil error: {e}")
-    
-    # Check CUDA availability via PyTorch (but don't override GPUtil memory readings)
-    if TORCH_AVAILABLE:
-        gpu_info['cuda_available'] = torch.cuda.is_available()
-        if torch.cuda.is_available():
-            if gpu_info['gpu_count'] == 0:  # Only set if GPUtil didn't work
-                gpu_info['gpu_count'] = torch.cuda.device_count()
-            
-            if gpu_info['gpu_count'] > 0:
-                if gpu_info['gpu_model'] == 'None':  # Only set if GPUtil didn't work
-                    gpu_info['gpu_model'] = torch.cuda.get_device_name(0)
-                
-                # Only use PyTorch memory if GPUtil failed
-                if gpu_info['gpu_memory_total_gb'] == 0:
-                    try:
-                        # Get PyTorch memory info (includes cached memory for more accurate usage)
-                        reserved = torch.cuda.memory_reserved(0) / (1024**3)  # Reserved memory (more accurate than allocated)
-                        allocated = torch.cuda.memory_allocated(0) / (1024**3)  # Actually allocated memory
-                        
-                        # Get total memory from device properties
-                        gpu_memory = torch.cuda.get_device_properties(0)
-                        total_gb = gpu_memory.total_memory / (1024**3)
-                        
-                        # Use reserved memory as it's more representative of actual usage
-                        used_memory = max(reserved, allocated)
-                        
-                        gpu_info['gpu_memory_total_gb'] = round(total_gb, 2)
-                        gpu_info['gpu_memory_used_gb'] = round(used_memory, 2)
-                        gpu_info['gpu_memory_percent'] = round((used_memory / total_gb) * 100, 1)
-                        
-                        print(f"🔥 PyTorch readings: Allocated={allocated:.2f}GB, Reserved={reserved:.2f}GB, Using reserved for accuracy")
-                    except Exception as e:
-                        print(f"⚠️ PyTorch memory error: {e}")
-    
-    return gpu_info
-
-def print_enhanced_system_usage(response_time=None):
-    """Print enhanced system usage including GPU info and response time"""
-    metrics = get_system_metrics()
-    gpu_info = get_gpu_info()
-    avg_cpu = get_average_cpu_usage()
-    avg_memory = get_average_memory_usage()
-    
-    print("=" * 70)
-    print("🖥️  ENHANCED SYSTEM METRICS")
-    print("=" * 70)
-    
-    # Response timing
-    if response_time:
-        print(f"⏱️  Response Time: {response_time:.2f} seconds")
-        print("-" * 70)
-    
-    # CPU and Memory
-    print(f"💾 Memory Usage: {metrics['memory_gb']:.2f} GB ({metrics['memory_percent']:.1f}%)")
-    print(f"📊 Average Memory (last 10): {avg_memory:.1f}%")
-    print(f"⚡ CPU Usage: {metrics['cpu_percent']:.1f}%")
-    print(f"📈 Average CPU (last 10): {avg_cpu:.1f}%")
-    print("-" * 70)
-    
-    # GPU Information - Enhanced with debugging
-    print(f"🎮 CUDA Available: {'✅ Yes' if gpu_info['cuda_available'] else '❌ No'}")
-    print(f"🔢 GPU Count: {gpu_info['gpu_count']}")
-    print(f"🏷️  GPU Model: {gpu_info['gpu_model']}")
-    
-    if gpu_info['cuda_available'] and gpu_info['gpu_count'] > 0:
-        print(f"🔥 GPU Memory: {gpu_info['gpu_memory_used_gb']:.2f} GB / {gpu_info['gpu_memory_total_gb']:.2f} GB ({gpu_info['gpu_memory_percent']:.1f}%)")
-        print(f"⚙️  GPU Utilization: {gpu_info['gpu_utilization_percent']:.1f}%")
-        
-        # Add detailed GPU debugging info
-        if gpu_info['gpu_memory_percent'] < 1.0:
-            print("🔍 DEBUG: Low GPU memory usage detected")
-            if GPU_AVAILABLE:
-                print("   - GPUtil is available for system-wide monitoring")
-            if TORCH_AVAILABLE:
-                print("   - PyTorch is available for CUDA memory tracking")
-    else:
-        print("🔥 GPU Memory: Not available")
-        print("⚙️  GPU Utilization: Not available")
-    
-    print("=" * 70)
 
 class SimpleRAG:
     def __init__(self):
@@ -309,7 +120,7 @@ Provide a helpful answer:"""
         try:
             response = requests.post("http://localhost:11434/api/generate", 
                 json={
-                    "model": "qwen2.5-coder:14b",
+                    "model": "llama3.2:latest",
                     "prompt": prompt,
                     "stream": stream,  # Enable streaming if requested
                     "options": {
@@ -428,22 +239,6 @@ except Exception as e:
     print(f" RAG initialization failed: {e}")
     rag_system = None
 
-# Initialize system monitoring baseline
-print("📊 Initializing system monitoring...")
-for _ in range(5):  # Take 5 initial readings to establish baseline
-    update_system_readings()
-    time.sleep(0.2)
-print("✅ System monitoring initialized")
-
-# Initialize GPU detection
-print("🎮 Detecting GPU capabilities...")
-gpu_info = get_gpu_info()
-if gpu_info['cuda_available']:
-    print(f"✅ CUDA detected: {gpu_info['gpu_model']} ({gpu_info['gpu_memory_total_gb']:.1f} GB)")
-else:
-    print("❌ No CUDA-capable GPU detected")
-print("✅ GPU detection completed")
-
 @app.route('/')
 def index():
     """Serve the chat interface"""
@@ -476,9 +271,6 @@ def chat():
             return jsonify({'error': 'No message provided'}), 400
         
         print(f" Session {session_id}: {message}")
-        
-        # Start timing the response
-        start_time = time.time()
         
         # Clean up old sessions periodically
         if len(conversation_sessions) > 50:  # Clean when we have too many sessions
@@ -529,17 +321,9 @@ To get started with CUDA programming, you'll need:
         if len(session_history) > 10:
             conversation_sessions[session_id] = session_history[-10:]
         
-        # Calculate response time
-        end_time = time.time()
-        response_time = end_time - start_time
-        
         print(f" Session {session_id}: {response[:100]}...")
         print(f" Context used: {bool(conversation_context)}")
         print(f"🔗 Follow-up detected: {is_follow_up}")
-        
-        # Update system readings and print enhanced usage metrics
-        update_system_readings()
-        print_enhanced_system_usage(response_time)
         
         return jsonify({
             'response': response,
@@ -559,25 +343,11 @@ To get started with CUDA programming, you'll need:
 @app.route('/api/status')
 def status():
     """Check system status"""
-    # Get current system metrics
-    current_metrics = get_system_metrics()
-    gpu_info = get_gpu_info()
-    avg_cpu = get_average_cpu_usage()
-    avg_memory = get_average_memory_usage()
-    
     status_info = {
         'rag_loaded': rag_system is not None,
         'knowledge_count': len(rag_system.knowledge) if rag_system else 0,
         'active_sessions': len(conversation_sessions),
-        'ollama_status': 'unknown',
-        'system_metrics': {
-            'current_memory_gb': current_metrics['memory_gb'],
-            'current_memory_percent': current_metrics['memory_percent'],
-            'average_memory_percent': avg_memory,
-            'current_cpu_percent': current_metrics['cpu_percent'],
-            'average_cpu_percent': avg_cpu
-        },
-        'gpu_metrics': gpu_info
+        'ollama_status': 'unknown'
     }
     
     # Test Ollama connection
@@ -621,57 +391,6 @@ def session_info(session_id):
             'status': 'not_found'
         }), 404
 
-#Visit http://localhost:5001/api/gpu_debug to see detailed GPU information
-
-@app.route('/api/gpu_debug')
-def gpu_debug():
-    """Detailed GPU debugging information"""
-    debug_info = {
-        'gpu_available_libs': {
-            'torch_available': TORCH_AVAILABLE,
-            'gputil_available': GPU_AVAILABLE
-        },
-        'gpu_info': get_gpu_info(),
-        'detailed_readings': {}
-    }
-    
-    # Get detailed PyTorch readings if available
-    if TORCH_AVAILABLE and torch.cuda.is_available():
-        try:
-            device_count = torch.cuda.device_count()
-            for i in range(device_count):
-                debug_info['detailed_readings'][f'torch_device_{i}'] = {
-                    'name': torch.cuda.get_device_name(i),
-                    'allocated_gb': round(torch.cuda.memory_allocated(i) / (1024**3), 3),
-                    'reserved_gb': round(torch.cuda.memory_reserved(i) / (1024**3), 3),
-                    'cached_gb': round(torch.cuda.memory_cached(i) / (1024**3), 3) if hasattr(torch.cuda, 'memory_cached') else 'N/A',
-                    'total_gb': round(torch.cuda.get_device_properties(i).total_memory / (1024**3), 2)
-                }
-        except Exception as e:
-            debug_info['detailed_readings']['torch_error'] = str(e)
-    
-    # Get detailed GPUtil readings if available
-    if GPU_AVAILABLE:
-        try:
-            import GPUtil
-            gpus = GPUtil.getGPUs()
-            for i, gpu in enumerate(gpus):
-                debug_info['detailed_readings'][f'gputil_device_{i}'] = {
-                    'name': gpu.name,
-                    'memory_used_mb': gpu.memoryUsed,
-                    'memory_total_mb': gpu.memoryTotal,
-                    'memory_free_mb': gpu.memoryFree,
-                    'memory_used_gb': round(gpu.memoryUsed / 1024, 2),
-                    'memory_total_gb': round(gpu.memoryTotal / 1024, 2),
-                    'memory_percent': round((gpu.memoryUsed / gpu.memoryTotal) * 100, 1),
-                    'utilization_percent': round(gpu.load * 100, 1),
-                    'temperature': gpu.temperature
-                }
-        except Exception as e:
-            debug_info['detailed_readings']['gputil_error'] = str(e)
-    
-    return jsonify(debug_info)
-
 @app.route('/health')
 def health():
     """Simple health check"""
@@ -688,25 +407,18 @@ if __name__ == '__main__':
     print("   • http://localhost:5001/                    - API Info")
     print("   • http://localhost:5001/api/chat            - Chat API (with context)")
     print("   • http://localhost:5001/api/status          - System status")
-    print("   • http://localhost:5001/api/clear_session   - Clear conversation")                        #DEBUGGING ENDPOINTS
+    print("   • http://localhost:5001/api/clear_session   - Clear conversation")
     print("   • http://localhost:5001/api/session_info/<id> - Session details")
-    print("   • http://localhost:5001/api/gpu_debug       - Detailed GPU debugging")
     print("   • http://localhost:5001/health              - Health check")
     print()
-    print(" Features:")
-    print("   ✅ Conversation memory per session")
-    print("   ✅ Context-aware responses")
-    print("   ✅ Follow-up question detection")
-    print("   ✅ Automatic session cleanup")
-    print("   ✅ Fixed CORS configuration")
-    print("   🖥️  Real-time system monitoring (Memory & CPU)")
-    print("   🎮 Enhanced GPU monitoring (FIXED memory detection)")
-    print("   ⏱️  Response time tracking")
-    print("   🔍 GPU debugging endpoint for troubleshooting")
+    print(" New Features:")
+    print("   Conversation memory per session")
+    print("   Context-aware responses")
+    print("   Follow-up question detection")
+    print("   Automatic session cleanup")
+    print("   Fixed CORS configuration")
     print()
     print("⚠️ Make sure Ollama is running: ollama serve")
     print(" Starting server on http://localhost:5001")
     
     app.run(debug=True, host='0.0.0.0', port=5001)
-
-

@@ -4,6 +4,182 @@
   box-sizing: border-box;
 }
 
+/* Add these styles to your App.css file */
+
+/* Enhanced folder item for better module selection feedback */
+.folder-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.folder-item:hover {
+  background: #333333;
+  transform: translateX(2px);
+}
+
+.folder-item.active {
+  background: #2a4d3a;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2);
+}
+
+.folder-item.active .folder-name {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.folder-item.active .folder-icon {
+  color: #22c55e;
+}
+
+/* Folder content layout */
+.folder-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.folder-name {
+  font-size: 14px;
+  color: #dddddd;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Module status improvements */
+.module-status {
+  margin-left: 8px;
+  margin-right: 8px;
+}
+
+.status-badge {
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+/* Chat section header improvements */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 8px 20px;
+  font-size: 13px;
+  color: #888888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Enhanced summary section */
+.modules-summary {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: rgba(34, 197, 94, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 0.1);
+  margin-bottom: 16px;
+}
+
+.summary-text {
+  font-size: 11px;
+  color: #22c55e;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Item menu button improvements */
+.item-menu {
+  background: none;
+  border: none;
+  color: #666666;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.folder-item:hover .item-menu,
+.chat-item:hover .item-menu {
+  opacity: 1;
+  color: #888888;
+}
+
+.item-menu:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #dddddd;
+}
+
+/* Section action buttons */
+.section-action {
+  background: none;
+  border: none;
+  color: #666666;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.section-action:hover {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+/* Loading and empty states */
+.loading-modules .folder-item,
+.empty-modules .folder-item,
+.loading-chats .chat-item,
+.empty-chats .chat-item {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.loading-modules .folder-item:hover,
+.empty-modules .folder-item:hover,
+.loading-chats .chat-item:hover,
+.empty-chats .chat-item:hover {
+  background: transparent;
+  transform: none;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .folder-item,
+  .chat-item {
+    padding: 10px 12px;
+  }
+  
+  .section-header {
+    padding: 10px 16px 6px 16px;
+    font-size: 12px;
+  }
+  
+  .modules-summary {
+    margin: 8px 12px 12px 12px;
+    padding: 8px 12px;
+  }
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #111111;

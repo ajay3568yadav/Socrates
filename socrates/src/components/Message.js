@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-
+import '../css/Message.css'; 
 const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor }) => {
   const isUser = message.role === 'user';
   const messageRef = useRef(null);

@@ -16,7 +16,8 @@ const CudaTutorApp = () => {
   const [currentView, setCurrentView] = useState('welcome');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Changed to true by default
+  const [isMobile, setIsMobile] = useState(false); // Added mobile detection
   const [selectedModuleId, setSelectedModuleId] = useState(null);
 
   // Chat Management State
@@ -41,6 +42,46 @@ const CudaTutorApp = () => {
   // Refs for preventing duplicate requests
   const statusCheckInProgress = useRef(false);
   const statusIntervalRef = useRef(null);
+
+  // ==================== MOBILE DETECTION ====================
+  
+  // Check if device is mobile and adjust sidebar accordingly
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = window.innerWidth <= 768;
+      setIsMobile(isMobileDevice);
+      
+      // On mobile, sidebar should be hidden by default
+      if (isMobileDevice && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // ==================== SIDEBAR TOGGLE FUNCTIONS ====================
+  
+  // Toggle sidebar visibility
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => !prev);
+  };
+
+  // Close sidebar when clicking outside on mobile
+  const handleOverlayClick = () => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  // Close sidebar when selecting items on mobile
+  const handleMobileItemSelect = () => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
 
   // ==================== AUTHENTICATION FUNCTIONS ====================
   
@@ -114,7 +155,7 @@ const CudaTutorApp = () => {
         setCurrentView('welcome');
         setCurrentChatId(null);
         setChats([]);
-        setSidebarOpen(false);
+        setSidebarOpen(!isMobile); // Reset to default based on device
         setSelectedModuleId(null);
       }
     } catch (error) {
@@ -425,6 +466,9 @@ const CudaTutorApp = () => {
       setMessages([]);
       setCurrentView('chat');
       
+      // Close sidebar on mobile after creating chat
+      handleMobileItemSelect();
+      
       console.log('New empty chat created:', data);
     } catch (error) {
       console.error('Error creating chat:', error);
@@ -437,6 +481,9 @@ const CudaTutorApp = () => {
     setCurrentChatId(chatId);
     setCurrentView('chat');
     setIsLoading(true);
+
+    // Close sidebar on mobile after selecting chat
+    handleMobileItemSelect();
 
     try {
       // Load messages for this chat
@@ -493,6 +540,9 @@ const CudaTutorApp = () => {
   const handleSelectModule = async (moduleId) => {
     console.log('Module selected:', moduleId);
     setSelectedModuleId(moduleId);
+    
+    // Close sidebar on mobile after selecting module
+    handleMobileItemSelect();
     
     // Clear current chat if it doesn't belong to the selected module
     if (currentChatId) {
@@ -646,39 +696,59 @@ const CudaTutorApp = () => {
   console.log('Current user:', user);
   console.log('Current chat ID:', currentChatId);
   console.log('Selected module ID:', selectedModuleId);
+  console.log('Sidebar open:', sidebarOpen);
+  console.log('Is mobile:', isMobile);
+
+  // Get sidebar classes based on state
+  const getSidebarClasses = () => {
+    let classes = 'sidebar';
+    
+    if (isMobile) {
+      classes += sidebarOpen ? ' mobile-visible' : ' mobile-hidden';
+    } else {
+      classes += sidebarOpen ? ' desktop-visible' : ' desktop-hidden';
+    }
+    
+    return classes;
+  };
 
   // Main authenticated app
   return (
     <div className="app-container">
       {/* Mobile Overlay */}
-      <div 
-        className={`mobile-overlay ${sidebarOpen ? 'show' : ''}`}
-        onClick={() => setSidebarOpen(false)}
-      />
+      {isMobile && sidebarOpen && (
+        <div className="mobile-overlay show" onClick={handleOverlayClick} />
+      )}
 
       {/* Sidebar */}
-      <Sidebar 
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onNewChat={startNewChat}
-        onSelectChat={selectChat}
-        chats={chats}
-        loadingChats={loadingChats}
-        currentChatId={currentChatId}
-        backendStatus={backendStatus}
-        user={user}
-        onLogout={handleLogout}
-        onRefreshBackend={checkBackendStatus}
-        onSelectModule={handleSelectModule}
-        selectedModuleId={selectedModuleId}
-      />
+      <div className={getSidebarClasses()}>
+        <Sidebar 
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onNewChat={startNewChat}
+          onSelectChat={selectChat}
+          chats={chats || []} // Ensure it's always an array
+          loadingChats={loadingChats}
+          currentChatId={currentChatId}
+          backendStatus={backendStatus || { online: false, limited: false, connecting: false }}
+          user={user}
+          onLogout={handleLogout}
+          onRefreshBackend={checkBackendStatus}
+          onSelectModule={handleSelectModule}
+          selectedModuleId={selectedModuleId}
+          isMobile={isMobile}
+        />
+      </div>
 
       {/* Main Content */}
       <div className="main-content">
         <ChatHeader 
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onToggleSidebar={toggleSidebar}
+          isSidebarVisible={sidebarOpen}
           backendStatus={backendStatus}
           user={user}
+          currentChat={chats.find(chat => chat.chat_id === currentChatId)}
+          selectedModuleId={selectedModuleId}
         />
         
         {currentView === 'welcome' ? (

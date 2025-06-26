@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../css/AuthPage.css'; // Import your CSS file for styles
 import { createClient } from '@supabase/supabase-js';
 
 import supabase from '../config/supabaseClient'; // Adjust the import path as necessary

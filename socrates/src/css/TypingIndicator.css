@@ -1,0 +1,52 @@
+/* TypingIndicator.css */
+.typing-indicator {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.typing-content {
+  background: #1f1f1f;
+  border: 1px solid #333333;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.typing-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #888888;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #888888;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0.5);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

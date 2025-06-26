@@ -1,6 +1,7 @@
 import React from 'react';
 import FolderSection from './FolderSection';
 import ChatsSection from './ChatsSection';
+import '../css/Sidebar.css'; 
 
 const Sidebar = ({ 
   isOpen, 

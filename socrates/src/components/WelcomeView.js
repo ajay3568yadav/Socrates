@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-
+import '../css/WelcomeView.css'; 
 const WelcomeView = ({ onSendMessage, user }) => {
   const [inputValue, setInputValue] = useState('');
   const [activeTab, setActiveTab] = useState('All');

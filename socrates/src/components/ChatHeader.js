@@ -1,40 +1,64 @@
 import React from 'react';
+import '../css/ChatHeader.css';
 
-const ChatHeader = ({ onToggleSidebar, backendStatus, user }) => {
-  const getStatusClass = () => {
-    if (backendStatus.online) return 'online';
-    if (backendStatus.limited) return 'limited';
-    return 'offline';
-  };
-
-  const getStatusText = () => {
-    if (backendStatus.online) return 'CUDA GPT 3.0 ✓';
-    if (backendStatus.limited) return 'CUDA GPT 3.0 ⚠';
-    return 'CUDA GPT 3.0 ✗';
-  };
-
+const ChatHeader = ({ 
+  currentChat, 
+  selectedModule, 
+  user, 
+  onToggleSidebar, 
+  isSidebarVisible 
+}) => {
   return (
     <div className="chat-header">
-      <button className="back-btn" onClick={onToggleSidebar}>←</button>
-      
+      {/* Sidebar Toggle Button */}
+      <button 
+        className="sidebar-toggle-btn" 
+        onClick={onToggleSidebar}
+        title={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
+      >
+        {isSidebarVisible ? '←' : '→'}
+      </button>
+
+      {/* Back Button (for mobile) */}
+      <button className="back-btn">
+        ←
+      </button>
+
+      {/* Chat/Module Title */}
       <div className="chat-title-section">
-        <div className="chat-title-main">CUDA Tutor</div>
-        <span className={`chat-status ${getStatusClass()}`}>
-          {getStatusText()}
-        </span>
+        <h1 className="chat-title-main">
+          {currentChat 
+            ? currentChat.title 
+            : selectedModule 
+              ? selectedModule.name 
+              : 'CUDA Tutor'
+          }
+        </h1>
+        
+        {selectedModule && (
+          <span className="chat-status online">
+            CUDA GPT 3.0
+          </span>
+        )}
       </div>
-      
+
+      {/* User Info */}
       {user && (
         <div className="header-user-info">
           <span className="user-greeting">
-            Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}!
+            Welcome, {user.name || user.email}!
           </span>
         </div>
       )}
-      
+
+      {/* Action Buttons */}
       <div className="chat-actions">
-        <button className="chat-action" title="Share">📤</button>
-        <button className="chat-action" title="Save">💾</button>
+        <button className="chat-action" title="Settings">
+          ⚙️
+        </button>
+        <button className="chat-action" title="More options">
+          🗑️
+        </button>
       </div>
     </div>
   );

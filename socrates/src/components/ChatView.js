@@ -3,7 +3,7 @@ import Message from './Message';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
 import CodePanel from './CodePanel';
-
+import '../css/ChatView.css';
 const ChatView = ({ messages, isLoading, onSendMessage }) => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);

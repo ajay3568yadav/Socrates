@@ -1,0 +1,105 @@
+/* ChatInput.css */
+.chat-input-area {
+  padding: 20px 24px;
+  border-top: 1px solid #333333;
+  background: #1a1a1a;
+}
+
+.chat-input-container {
+  flex-shrink: 0;
+  transition: width 0.3s ease;
+  position: relative;
+  z-index: 10;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.input-container {
+  background: #1f1f1f;
+  border: 1px solid #333333;
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.input-container:focus-within {
+  border-color: #22c55e;
+}
+
+.input-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.input-field {
+  flex: 1;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  resize: none;
+  min-height: 24px;
+  max-height: 120px;
+  outline: none;
+  font-family: inherit;
+}
+
+.input-field::placeholder {
+  color: #888888;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-action {
+  background: none;
+  border: none;
+  color: #888888;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.input-action:hover {
+  background: #333333;
+  color: white;
+}
+
+.send-btn {
+  background: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-btn:hover {
+  background: #16a34a;
+}
+
+.send-btn:disabled {
+  background: #333333;
+  cursor: not-allowed;
+}

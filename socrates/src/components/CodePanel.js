@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-
+import '../css/CodePanel.css'; 
 const CodePanel = ({ 
   isOpen, 
   onClose, 

@@ -1,0 +1,94 @@
+/* ChatView.css */
+.chat-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.chat-view.with-code-panel {
+  /* Adjust main content when code panel is open */
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  scroll-behavior: smooth;
+  -webkit-scroll-behavior: smooth;
+  position: relative;
+  transition: width 0.3s ease;
+}
+
+.chat-view.with-code-panel .messages-container {
+  border-right: 2px solid #30363d;
+}
+
+.messages-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 100%;
+  padding-bottom: 20px;
+}
+
+.scroll-to-bottom-btn {
+  position: absolute;
+  bottom: 80px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scroll-to-bottom-btn:hover {
+  background: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.scroll-to-bottom-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.chat-view.with-code-panel .scroll-to-bottom-btn {
+  right: calc(50% + 20px);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .chat-view.with-code-panel .messages-container,
+  .chat-view.with-code-panel .chat-input-container {
+    width: 100% !important;
+  }
+  
+  .scroll-to-bottom-btn {
+    bottom: 100px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  
+  .chat-view.with-code-panel .scroll-to-bottom-btn {
+    right: 16px;
+  }
+}

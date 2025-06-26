@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import supabase from '../config/supabaseClient';
+import '../css/FolderSection.css'; // Ensure you have the correct CSS file
 
 const FolderSection = ({ onSelectModule, selectedModuleId }) => {
   const [modules, setModules] = useState([]);

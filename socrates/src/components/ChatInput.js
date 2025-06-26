@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-
+import '../css/ChatInput.css';
 const ChatInput = ({ onSendMessage, isLoading }) => {
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef(null);

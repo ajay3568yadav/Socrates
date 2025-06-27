@@ -1,14 +1,33 @@
-/* Sidebar.css - Updated with proper toggle animations */
+/* Sidebar.css */
+:root {
+  --primary-color: #76b900;
+  --primary-color-darker: #629900;
+  --sidebar-bg: #000000;
+  --text-color: #ffffff;
+  --text-color-subtle: #a0a0a0;
+  --border-color: #333333;
+  --hover-bg: #1a1a1a;
+  --input-bg: #2a2a2a;
+  --error-color: #e53e3e;
+  --error-bg: rgba(229, 62, 62, 0.1);
+  --success-color: var(--primary-color);
+  --success-bg: rgba(118, 185, 0, 0.1);
+  --warning-color: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+}
+
 .sidebar {
   width: 288px;
-  background: #1f1f1f;
-  border-right: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease, margin-left 0.3s ease;
   position: relative;
   flex-shrink: 0;
   z-index: 100;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Desktop sidebar states */
@@ -17,7 +36,7 @@
     transform: translateX(0);
     margin-left: 0;
   }
-  
+
   .sidebar.desktop-hidden {
     transform: translateX(-100%);
     margin-left: -288px;
@@ -33,11 +52,11 @@
     height: 100vh;
     z-index: 150;
   }
-  
+
   .sidebar.mobile-visible {
     transform: translateX(0);
   }
-  
+
   .sidebar.mobile-hidden {
     transform: translateX(-100%);
   }
@@ -45,36 +64,47 @@
 
 .sidebar-header {
   padding: 16px;
-  border-bottom: 1px solid #333333;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-header:hover {
+  background-color: var(--hover-bg);
 }
 
 .app-logo {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  width: 36px;
+  height: 36px;
+  background: transparent;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
   flex-shrink: 0;
 }
 
+.app-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .app-title {
-  font-weight: 600;
+  font-weight: 700;
   flex: 1;
-  color: #f0f6fc;
-  font-size: 16px;
+  color: var(--text-color);
+  font-size: 20px;
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: #888888;
+  color: var(--text-color-subtle);
   cursor: pointer;
   padding: 8px;
   border-radius: 6px;
@@ -84,18 +114,18 @@
 }
 
 .close-btn:hover {
-  background: #333333;
-  color: #f0f6fc;
+  background: var(--hover-bg);
+  color: var(--text-color);
 }
 
 /* User Info Section */
 .user-info-section {
   padding: 12px 16px;
-  border-bottom: 1px solid #333333;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #1a1a1a;
+  background: var(--primary-color-darker);
   flex-shrink: 0;
 }
 
@@ -110,14 +140,14 @@
 .user-avatar {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  background: var(--primary-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
-  color: white;
+  color: var(--sidebar-bg);
   flex-shrink: 0;
 }
 
@@ -129,7 +159,7 @@
 .user-name {
   font-size: 14px;
   font-weight: 600;
-  color: #dddddd;
+  color: var(--text-color);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -137,7 +167,7 @@
 
 .user-email {
   font-size: 12px;
-  color: #888888;
+  color: var(--text-color-subtle);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -146,7 +176,7 @@
 .logout-btn {
   background: none;
   border: none;
-  color: #888888;
+  color: var(--text-color-subtle);
   cursor: pointer;
   padding: 6px;
   border-radius: 4px;
@@ -156,8 +186,8 @@
 }
 
 .logout-btn:hover {
-  background: #333333;
-  color: #f87171;
+  background: var(--hover-bg);
+  color: var(--error-color);
 }
 
 /* Connection Status */
@@ -182,21 +212,21 @@
 }
 
 .connection-status.connecting {
-  background: #5c4a1a;
-  color: #fbbf24;
-  border: 1px solid #fbbf24;
+  background: var(--warning-bg);
+  color: var(--warning-color);
+  border: 1px solid var(--warning-color);
 }
 
 .connection-status.connected {
-  background: #1a5c1a;
-  color: #4ade80;
-  border: 1px solid #4ade80;
+  background: var(--success-bg);
+  color: var(--success-color);
+  border: 1px solid var(--success-color);
 }
 
 .connection-status.error {
-  background: #5c1a1a;
-  color: #f87171;
-  border: 1px solid #f87171;
+  background: var(--error-bg);
+  color: var(--error-color);
+  border: 1px solid var(--error-color);
 }
 
 .refresh-hint {
@@ -211,35 +241,34 @@
 /* Search Section */
 .search-section {
   padding: 16px;
-  border-bottom: 1px solid #333333;
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 
 .search-input {
   width: 100%;
-  background: #333333;
-  border: 1px solid #444444;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
-  color: white;
+  color: var(--text-color);
   outline: none;
   transition: border-color 0.2s;
 }
 
 .search-input:focus {
-  border-color: #22c55e;
+  border-color: var(--primary-color);
 }
 
 .search-input::placeholder {
-  color: #888888;
+  color: var(--text-color-subtle);
 }
 
 /* Sidebar Content */
 .sidebar-content {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-y: auto;
-  padding: 16px 0;
   min-height: 0;
 }
 
@@ -252,23 +281,25 @@
 }
 
 .sidebar-content::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: var(--border-color);
   border-radius: 3px;
 }
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
-  background: #444444;
+  background: #555555;
 }
 
 /* New Chat Button */
 .new-chat-btn {
-  margin: 16px;
-  background: #22c55e;
-  color: white;
+  margin: 0;
+  width: 100%;
+  background: var(--primary-color);
+  color: var(--sidebar-bg);
   border: none;
   border-radius: 8px;
   padding: 12px 16px;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -279,7 +310,14 @@
 }
 
 .new-chat-btn:hover {
-  background: #16a34a;
+  background: var(--primary-color-darker);
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background-color: var(--sidebar-bg);
 }
 
 /* Mobile specific styles */
@@ -287,24 +325,24 @@
   .close-btn {
     display: block;
   }
-  
+
   .user-info-section {
     padding: 10px 12px;
   }
-  
+
   .user-name {
     font-size: 13px;
   }
-  
+
   .user-email {
     font-size: 11px;
   }
-  
+
   .connection-status {
     margin: 12px;
     padding: 6px 12px;
   }
-  
+
   .search-section {
     padding: 12px;
   }

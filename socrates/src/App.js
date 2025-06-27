@@ -1,21 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './App.css';
-import AuthPage from './components/AuthPage';
-import Sidebar from './components/Sidebar';
-import ChatHeader from './components/ChatHeader';
-import WelcomeView from './components/WelcomeView';
-import ChatView from './components/ChatView';
-import SplitPaneLayout from './components/SplitPaneLayout';
-import ImprovedCodeEditor from './components/ImprovedCodeEditor';
-import supabase from './config/supabaseClient';
+import React, { useState, useEffect, useRef } from "react";
+import "./App.css";
+import AuthPage from "./components/AuthPage";
+import Sidebar from "./components/Sidebar";
+import ChatHeader from "./components/ChatHeader";
+import WelcomeView from "./components/WelcomeView";
+import ChatView from "./components/ChatView";
+import SplitPaneLayout from "./components/SplitPaneLayout";
+import ImprovedCodeEditor from "./components/ImprovedCodeEditor";
+import supabase from "./config/supabaseClient";
 
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5001";
 
 // Main App Component with Authentication and Chat Management
 const CudaTutorApp = () => {
   // UI State
-  const [currentView, setCurrentView] = useState('welcome');
+  const [currentView, setCurrentView] = useState("welcome");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,35 +26,37 @@ const CudaTutorApp = () => {
   // Split Pane State
   const [splitPaneMode, setSplitPaneMode] = useState(false);
   const [splitPaneWidth, setSplitPaneWidth] = useState(60);
-  const [codeEditorContent, setCodeEditorContent] = useState('');
-  const [codeEditorLanguage, setCodeEditorLanguage] = useState('c');
+  const [codeEditorContent, setCodeEditorContent] = useState("");
+  const [codeEditorLanguage, setCodeEditorLanguage] = useState("c");
 
   // Chat Management State
   const [currentChatId, setCurrentChatId] = useState(null);
   const [chats, setChats] = useState([]);
   const [loadingChats, setLoadingChats] = useState(false);
-  
+
   // Authentication State
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Backend Status State
-  const [backendStatus, setBackendStatus] = useState({ 
-    online: false, 
-    limited: false, 
-    connecting: false 
+  const [backendStatus, setBackendStatus] = useState({
+    online: false,
+    limited: false,
+    connecting: false,
   });
-  
+
   // Session Management
-  const [sessionId] = useState(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-  
+  const [sessionId] = useState(
+    `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  );
+
   // Refs for preventing duplicate requests
   const statusCheckInProgress = useRef(false);
   const statusIntervalRef = useRef(null);
 
   // ==================== SPLIT PANE FUNCTIONS ====================
-  
-  const handleEnterSplitMode = (code, language = 'c') => {
+
+  const handleEnterSplitMode = (code, language = "c") => {
     setCodeEditorContent(code);
     setCodeEditorLanguage(language);
     setSplitPaneMode(true);
@@ -61,7 +64,7 @@ const CudaTutorApp = () => {
 
   const handleExitSplitMode = () => {
     setSplitPaneMode(false);
-    setCodeEditorContent('');
+    setCodeEditorContent("");
   };
 
   const handleSplitPaneWidthChange = (width) => {
@@ -72,31 +75,31 @@ const CudaTutorApp = () => {
     sendMessage(reviewPrompt);
   };
 
-  const handleOpenCodeEditor = (code, language = 'c') => {
+  const handleOpenCodeEditor = (code, language = "c") => {
     handleEnterSplitMode(code, language);
   };
 
   // ==================== MOBILE DETECTION ====================
-  
+
   useEffect(() => {
     const checkMobile = () => {
       const isMobileDevice = window.innerWidth <= 768;
       setIsMobile(isMobileDevice);
-      
+
       if (isMobileDevice && sidebarOpen) {
         setSidebarOpen(false);
       }
     };
 
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // ==================== SIDEBAR TOGGLE FUNCTIONS ====================
-  
+
   const toggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
+    setSidebarOpen((prev) => !prev);
   };
 
   const handleOverlayClick = () => {
@@ -112,18 +115,21 @@ const CudaTutorApp = () => {
   };
 
   // ==================== AUTHENTICATION FUNCTIONS ====================
-  
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
         if (error) {
-          console.error('Error getting session:', error);
+          console.error("Error getting session:", error);
         } else {
           setUser(session?.user || null);
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error("Auth check error:", error);
       } finally {
         setLoading(false);
       }
@@ -131,8 +137,10 @@ const CudaTutorApp = () => {
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       setUser(session?.user || null);
       setLoading(false);
     });
@@ -141,19 +149,19 @@ const CudaTutorApp = () => {
       try {
         const code = decodeURIComponent(encodedCode);
         await navigator.clipboard.writeText(code);
-        
+
         if (buttonElement) {
           const originalText = buttonElement.textContent;
-          buttonElement.textContent = '✓';
-          buttonElement.style.color = '#22c55e';
-          
+          buttonElement.textContent = "✓";
+          buttonElement.style.color = "#22c55e";
+
           setTimeout(() => {
             buttonElement.textContent = originalText;
-            buttonElement.style.color = '';
+            buttonElement.style.color = "";
           }, 2000);
         }
       } catch (err) {
-        console.error('Failed to copy code:', err);
+        console.error("Failed to copy code:", err);
       }
     };
 
@@ -171,19 +179,19 @@ const CudaTutorApp = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Logout error:', error);
+        console.error("Logout error:", error);
       } else {
         setMessages([]);
-        setCurrentView('welcome');
+        setCurrentView("welcome");
         setCurrentChatId(null);
         setChats([]);
         setSidebarOpen(!isMobile);
         setSelectedModuleId(null);
         setSplitPaneMode(false);
-        setCodeEditorContent('');
+        setCodeEditorContent("");
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -191,54 +199,54 @@ const CudaTutorApp = () => {
 
   const checkBackendStatus = async () => {
     if (statusCheckInProgress.current) {
-      console.log('Status check already in progress, skipping...');
+      console.log("Status check already in progress, skipping...");
       return;
     }
 
     try {
       statusCheckInProgress.current = true;
-      setBackendStatus(prev => ({ ...prev, connecting: true }));
-      
-      console.log('Checking backend status...');
-      
+      setBackendStatus((prev) => ({ ...prev, connecting: true }));
+
+      console.log("Checking backend status...");
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
+
       const response = await fetch(`${API_BASE_URL}/api/status`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        signal: controller.signal
+        signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (response.ok) {
         const data = await response.json();
-        console.log('Backend status response:', data);
+        console.log("Backend status response:", data);
         setBackendStatus({
-          online: data.rag_loaded && data.ollama_status === 'connected',
-          limited: !data.rag_loaded || data.ollama_status !== 'connected',
+          online: data.rag_loaded && data.ollama_status === "connected",
+          limited: !data.rag_loaded || data.ollama_status !== "connected",
           connecting: false,
-          details: data
+          details: data,
         });
       } else {
         throw new Error(`HTTP ${response.status}`);
       }
     } catch (error) {
-      console.error('Backend status check failed:', error);
-      
+      console.error("Backend status check failed:", error);
+
       let errorMessage = error.message;
-      if (error.name === 'AbortError') {
-        errorMessage = 'Connection timeout';
+      if (error.name === "AbortError") {
+        errorMessage = "Connection timeout";
       }
-      
-      setBackendStatus({ 
-        online: false, 
-        limited: false, 
+
+      setBackendStatus({
+        online: false,
+        limited: false,
         connecting: false,
-        error: errorMessage 
+        error: errorMessage,
       });
     } finally {
       statusCheckInProgress.current = false;
@@ -252,17 +260,17 @@ const CudaTutorApp = () => {
     }
 
     if (user) {
-      console.log('User authenticated, starting backend status checks');
-      
+      console.log("User authenticated, starting backend status checks");
+
       if (!selectedModuleId) {
-        console.log('No module selected, setting default CUDA Basics module');
-        setSelectedModuleId('c801ac6c-1232-4c96-89b1-c4eadf41026c');
+        console.log("No module selected, setting default CUDA Basics module");
+        setSelectedModuleId("c801ac6c-1232-4c96-89b1-c4eadf41026c");
       }
-      
+
       checkBackendStatus();
-      
+
       statusIntervalRef.current = setInterval(() => {
-        console.log('Periodic backend status check');
+        console.log("Periodic backend status check");
         checkBackendStatus();
       }, 120000);
     }
@@ -279,7 +287,7 @@ const CudaTutorApp = () => {
 
   const saveMessage = async (chatId, sender, content, orderIndex) => {
     if (!chatId) {
-      console.error('Cannot save message: chatId is null');
+      console.error("Cannot save message: chatId is null");
       return null;
     }
 
@@ -289,108 +297,109 @@ const CudaTutorApp = () => {
         sender: sender,
         content: content,
         order_index: orderIndex,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
-      console.log('Saving message:', messageData);
+      console.log("Saving message:", messageData);
 
       const { data, error } = await supabase
-        .from('Messages')
+        .from("Messages")
         .insert([messageData])
         .select()
         .single();
 
       if (error) {
-        console.error('Error saving message:', error);
+        console.error("Error saving message:", error);
         return null;
       }
 
-      console.log('Message saved successfully:', data);
+      console.log("Message saved successfully:", data);
       return data;
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error("Error saving message:", error);
       return null;
     }
   };
 
   const loadChatMessages = async (chatId) => {
     if (!chatId) {
-      console.error('Cannot load messages: chatId is null');
+      console.error("Cannot load messages: chatId is null");
       return [];
     }
 
     try {
-      console.log('Loading messages for chat:', chatId);
+      console.log("Loading messages for chat:", chatId);
 
       const { data, error } = await supabase
-        .from('Messages')
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('order_index', { ascending: true });
+        .from("Messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("order_index", { ascending: true });
 
       if (error) {
-        console.error('Error loading messages:', error);
+        console.error("Error loading messages:", error);
         return [];
       }
 
-      const formattedMessages = data.map(msg => ({
+      const formattedMessages = data.map((msg) => ({
         id: `${msg.message_id}_${msg.sender}`,
         role: msg.sender,
         content: msg.content,
         timestamp: msg.timestamp,
         messageId: msg.message_id,
-        orderIndex: msg.order_index
+        orderIndex: msg.order_index,
       }));
 
-      console.log('Loaded messages for chat:', chatId, formattedMessages);
+      console.log("Loaded messages for chat:", chatId, formattedMessages);
       return formattedMessages;
     } catch (error) {
-      console.error('Error loading messages:', error);
+      console.error("Error loading messages:", error);
       return [];
     }
   };
 
   const createNewChatForMessage = async (userMessage) => {
     if (!user) {
-      console.error('Cannot create chat: user is null');
+      console.error("Cannot create chat: user is null");
       return null;
     }
 
     try {
-      const heading = userMessage.length > 50 
-        ? userMessage.substring(0, 50) + '...' 
-        : userMessage;
+      const heading =
+        userMessage.length > 50
+          ? userMessage.substring(0, 50) + "..."
+          : userMessage;
 
       const newChat = {
         user_id: user.id,
         heading: heading,
-        description: 'Chat conversation',
+        description: "Chat conversation",
         timestamp: new Date().toISOString(),
-        course_id: '1e44eb02-8daa-44a0-a7ee-28f88ce6863f',
-        module_id: selectedModuleId || 'c801ac6c-1232-4c96-89b1-c4eadf41026c',
-        status: 'active'
+        course_id: "1e44eb02-8daa-44a0-a7ee-28f88ce6863f",
+        module_id: selectedModuleId || "c801ac6c-1232-4c96-89b1-c4eadf41026c",
+        status: "active",
       };
 
-      console.log('Creating new chat for message:', newChat);
+      console.log("Creating new chat for message:", newChat);
 
       const { data, error } = await supabase
-        .from('Chats')
+        .from("Chats")
         .insert([newChat])
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating new chat:', error);
+        console.error("Error creating new chat:", error);
         return null;
       }
 
-      setChats(prevChats => [data, ...prevChats]);
+      setChats((prevChats) => [data, ...prevChats]);
       setCurrentChatId(data.chat_id);
-      
-      console.log('New chat created for message:', data);
+
+      console.log("New chat created for message:", data);
       return data;
     } catch (error) {
-      console.error('Error creating new chat:', error);
+      console.error("Error creating new chat:", error);
       return null;
     }
   };
@@ -399,39 +408,50 @@ const CudaTutorApp = () => {
 
   const loadChats = async (moduleId = null) => {
     if (!user) return;
-    
+
     try {
       setLoadingChats(true);
       const filterModuleId = moduleId || selectedModuleId;
-      
-      console.log('Loading chats for user:', user.id, 'module:', filterModuleId);
 
-      let query = supabase
-        .from('Chats')
-        .select('*')
-        .eq('user_id', user.id);
+      console.log(
+        "Loading chats for user:",
+        user.id,
+        "module:",
+        filterModuleId
+      );
+
+      let query = supabase.from("Chats").select("*").eq("user_id", user.id);
 
       if (filterModuleId) {
-        query = query.eq('module_id', filterModuleId);
-        console.log('Filtering chats by module_id:', filterModuleId);
+        query = query.eq("module_id", filterModuleId);
+        console.log("Filtering chats by module_id:", filterModuleId);
       }
 
-      const { data, error } = await query.order('timestamp', { ascending: false });
+      const { data, error } = await query.order("timestamp", {
+        ascending: false,
+      });
 
       if (error) {
-        console.error('Error loading chats:', error);
-        
-        if (error.code === '42P01') {
-          console.warn('Chats table does not exist. Please create it in Supabase first.');
+        console.error("Error loading chats:", error);
+
+        if (error.code === "42P01") {
+          console.warn(
+            "Chats table does not exist. Please create it in Supabase first."
+          );
           setChats([]);
           return;
         }
       } else {
         setChats(data || []);
-        console.log('Loaded chats for module:', filterModuleId, 'count:', data?.length || 0);
+        console.log(
+          "Loaded chats for module:",
+          filterModuleId,
+          "count:",
+          data?.length || 0
+        );
       }
     } catch (error) {
-      console.error('Error loading chats:', error);
+      console.error("Error loading chats:", error);
       setChats([]);
     } finally {
       setLoadingChats(false);
@@ -444,45 +464,45 @@ const CudaTutorApp = () => {
     try {
       const newChat = {
         user_id: user.id,
-        heading: 'New Chat',
-        description: 'Start a new conversation about CUDA programming',
+        heading: "New Chat",
+        description: "Start a new conversation about CUDA programming",
         timestamp: new Date().toISOString(),
-        course_id: '1e44eb02-8daa-44a0-a7ee-28f88ce6863f',
-        module_id: selectedModuleId || 'c801ac6c-1232-4c96-89b1-c4eadf41026c',
-        status: 'active'
+        course_id: "1e44eb02-8daa-44a0-a7ee-28f88ce6863f",
+        module_id: selectedModuleId || "c801ac6c-1232-4c96-89b1-c4eadf41026c",
+        status: "active",
       };
 
-      console.log('Creating new empty chat:', newChat);
+      console.log("Creating new empty chat:", newChat);
 
       const { data, error } = await supabase
-        .from('Chats')
+        .from("Chats")
         .insert([newChat])
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating chat:', error);
+        console.error("Error creating chat:", error);
         return;
       }
 
-      setChats(prevChats => [data, ...prevChats]);
-      
+      setChats((prevChats) => [data, ...prevChats]);
+
       setCurrentChatId(data.chat_id);
       setMessages([]);
-      setCurrentView('chat');
-      
+      setCurrentView("chat");
+
       handleMobileItemSelect();
-      
-      console.log('New empty chat created:', data);
+
+      console.log("New empty chat created:", data);
     } catch (error) {
-      console.error('Error creating chat:', error);
+      console.error("Error creating chat:", error);
     }
   };
 
   const selectChat = async (chatId) => {
-    console.log('Selecting chat:', chatId);
+    console.log("Selecting chat:", chatId);
     setCurrentChatId(chatId);
-    setCurrentView('chat');
+    setCurrentView("chat");
     setIsLoading(true);
 
     handleMobileItemSelect();
@@ -490,9 +510,9 @@ const CudaTutorApp = () => {
     try {
       const chatMessages = await loadChatMessages(chatId);
       setMessages(chatMessages);
-      console.log('Chat selected and messages loaded:', chatId);
+      console.log("Chat selected and messages loaded:", chatId);
     } catch (error) {
-      console.error('Error selecting chat:', error);
+      console.error("Error selecting chat:", error);
       setMessages([]);
     } finally {
       setIsLoading(false);
@@ -503,53 +523,65 @@ const CudaTutorApp = () => {
     if (!chatId || !firstMessage) return;
 
     try {
-      const heading = firstMessage.length > 50 
-        ? firstMessage.substring(0, 50) + '...' 
-        : firstMessage;
+      const heading =
+        firstMessage.length > 50
+          ? firstMessage.substring(0, 50) + "..."
+          : firstMessage;
 
-      console.log('Updating chat title:', chatId, heading);
+      console.log("Updating chat title:", chatId, heading);
 
       const { error } = await supabase
-        .from('Chats')
-        .update({ 
+        .from("Chats")
+        .update({
           heading: heading,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })
-        .eq('chat_id', chatId);
+        .eq("chat_id", chatId);
 
       if (error) {
-        console.error('Error updating chat heading:', error);
+        console.error("Error updating chat heading:", error);
       } else {
-        setChats(prevChats => 
-          prevChats.map(chat => 
-            chat.chat_id === chatId 
-              ? { ...chat, heading: heading, timestamp: new Date().toISOString() }
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.chat_id === chatId
+              ? {
+                  ...chat,
+                  heading: heading,
+                  timestamp: new Date().toISOString(),
+                }
               : chat
           )
         );
-        console.log('Chat heading updated:', heading);
+        console.log("Chat heading updated:", heading);
       }
     } catch (error) {
-      console.error('Error updating chat heading:', error);
+      console.error("Error updating chat heading:", error);
     }
   };
 
   const handleSelectModule = async (moduleId) => {
-    console.log('Module selected:', moduleId);
+    console.log("Module selected:", moduleId);
     setSelectedModuleId(moduleId);
-    
+
     handleMobileItemSelect();
-    
+
     if (currentChatId) {
-      const currentChat = chats.find(chat => chat.chat_id === currentChatId);
+      const currentChat = chats.find((chat) => chat.chat_id === currentChatId);
       if (currentChat && currentChat.module_id !== moduleId) {
         setCurrentChatId(null);
         setMessages([]);
-        setCurrentView('welcome');
+        setCurrentView("welcome");
       }
     }
-    
+
     await loadChats(moduleId);
+  };
+
+  const navigateToWelcome = () => {
+    setCurrentView("welcome");
+    setCurrentChatId(null);
+    setMessages([]);
+    handleMobileItemSelect();
   };
 
   const startNewChat = () => {
@@ -558,7 +590,10 @@ const CudaTutorApp = () => {
 
   useEffect(() => {
     if (user && selectedModuleId) {
-      console.log('User and module ready, loading chats for module:', selectedModuleId);
+      console.log(
+        "User and module ready, loading chats for module:",
+        selectedModuleId
+      );
       loadChats(selectedModuleId);
     }
   }, [selectedModuleId, user]);
@@ -566,15 +601,15 @@ const CudaTutorApp = () => {
   // ==================== MESSAGE HANDLING FUNCTIONS ====================
 
   const sendMessage = async (message) => {
-    console.log('Sending message:', message);
+    console.log("Sending message:", message);
     let chatId = currentChatId;
     let orderIndex = messages.length;
 
     if (!chatId) {
-      console.log('No current chat, creating new chat...');
+      console.log("No current chat, creating new chat...");
       const newChat = await createNewChatForMessage(message);
       if (!newChat) {
-        console.error('Failed to create new chat');
+        console.error("Failed to create new chat");
         return;
       }
       chatId = newChat.chat_id;
@@ -582,19 +617,24 @@ const CudaTutorApp = () => {
     }
 
     const userMessage = {
-      id: Date.now() + '_user',
-      role: 'user',
+      id: Date.now() + "_user",
+      role: "user",
       content: message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
-    setCurrentView('chat');
+    setCurrentView("chat");
 
-    const savedUserMessage = await saveMessage(chatId, 'user', message, orderIndex);
+    const savedUserMessage = await saveMessage(
+      chatId,
+      "user",
+      message,
+      orderIndex
+    );
     if (savedUserMessage) {
-      console.log('User message saved to database');
+      console.log("User message saved to database");
     }
 
     if (orderIndex === 0) {
@@ -603,16 +643,16 @@ const CudaTutorApp = () => {
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           message: message,
           session_id: sessionId,
           chat_id: chatId,
           module_id: selectedModuleId,
-          stream: false
+          stream: false,
         }),
       });
 
@@ -621,36 +661,45 @@ const CudaTutorApp = () => {
       }
 
       const data = await response.json();
-      
+
       const assistantMessage = {
-        id: Date.now() + '_assistant',
-        role: 'assistant',
-        content: data.response || 'Sorry, I received an empty response.',
+        id: Date.now() + "_assistant",
+        role: "assistant",
+        content: data.response || "Sorry, I received an empty response.",
         timestamp: new Date().toISOString(),
-        isStreaming: false
+        isStreaming: false,
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
 
-      const savedAssistantMessage = await saveMessage(chatId, 'assistant', assistantMessage.content, orderIndex + 1);
+      const savedAssistantMessage = await saveMessage(
+        chatId,
+        "assistant",
+        assistantMessage.content,
+        orderIndex + 1
+      );
       if (savedAssistantMessage) {
-        console.log('Assistant message saved to database');
+        console.log("Assistant message saved to database");
       }
-
     } catch (error) {
-      console.error('Error sending message:', error);
-      
+      console.error("Error sending message:", error);
+
       const errorMessage = {
-        id: Date.now() + '_error',
-        role: 'assistant',
+        id: Date.now() + "_error",
+        role: "assistant",
         content: `Sorry, I encountered an error: ${error.message}. Please check if the backend is running and try again.`,
         timestamp: new Date().toISOString(),
-        isError: true
+        isError: true,
       };
 
-      setMessages(prev => [...prev, errorMessage]);
-      
-      await saveMessage(chatId, 'assistant', errorMessage.content, orderIndex + 1);
+      setMessages((prev) => [...prev, errorMessage]);
+
+      await saveMessage(
+        chatId,
+        "assistant",
+        errorMessage.content,
+        orderIndex + 1
+      );
     } finally {
       setIsLoading(false);
     }
@@ -675,14 +724,14 @@ const CudaTutorApp = () => {
   }
 
   const getSidebarClasses = () => {
-    let classes = 'sidebar';
-    
+    let classes = "sidebar";
+
     if (isMobile) {
-      classes += sidebarOpen ? ' mobile-visible' : ' mobile-hidden';
+      classes += sidebarOpen ? " mobile-visible" : " mobile-hidden";
     } else {
-      classes += sidebarOpen ? ' desktop-visible' : ' desktop-hidden';
+      classes += sidebarOpen ? " desktop-visible" : " desktop-hidden";
     }
-    
+
     return classes;
   };
 
@@ -695,15 +744,22 @@ const CudaTutorApp = () => {
 
       {/* Sidebar */}
       <div className={getSidebarClasses()}>
-        <Sidebar 
+        <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           onNewChat={startNewChat}
+          onNavigateHome={navigateToWelcome}
           onSelectChat={selectChat}
           chats={chats || []}
           loadingChats={loadingChats}
           currentChatId={currentChatId}
-          backendStatus={backendStatus || { online: false, limited: false, connecting: false }}
+          backendStatus={
+            backendStatus || {
+              online: false,
+              limited: false,
+              connecting: false,
+            }
+          }
           user={user}
           onLogout={handleLogout}
           onRefreshBackend={checkBackendStatus}
@@ -715,30 +771,30 @@ const CudaTutorApp = () => {
 
       {/* Main Content */}
       <div className="main-content">
-        <ChatHeader 
+        <ChatHeader
+          currentChat={chats.find((c) => c.chat_id === currentChatId)}
+          selectedModule={
+            selectedModuleId ? { id: selectedModuleId, name: "CUDA" } : null
+          }
+          user={user}
           onToggleSidebar={toggleSidebar}
           isSidebarVisible={sidebarOpen}
           backendStatus={backendStatus}
-          user={user}
-          currentChat={chats.find(chat => chat.chat_id === currentChatId)}
-          selectedModuleId={selectedModuleId}
           splitPaneMode={splitPaneMode}
           onExitSplitMode={handleExitSplitMode}
+          onLogout={handleLogout}
         />
-        
+
         {splitPaneMode ? (
           /* Claude-like Split Pane Layout */
           <SplitPaneLayout
             initialLeftWidth={splitPaneWidth}
             onWidthChange={handleSplitPaneWidthChange}
             leftPane={
-              currentView === 'welcome' ? (
-                <WelcomeView 
-                  onSendMessage={sendMessage} 
-                  user={user}
-                />
+              currentView === "welcome" ? (
+                <WelcomeView onSendMessage={sendMessage} user={user} />
               ) : (
-                <ChatView 
+                <ChatView
                   messages={messages}
                   isLoading={isLoading}
                   onSendMessage={sendMessage}
@@ -762,13 +818,10 @@ const CudaTutorApp = () => {
         ) : (
           /* Normal Single Pane Layout */
           <>
-            {currentView === 'welcome' ? (
-              <WelcomeView 
-                onSendMessage={sendMessage} 
-                user={user}
-              />
+            {currentView === "welcome" ? (
+              <WelcomeView onSendMessage={sendMessage} user={user} />
             ) : (
-              <ChatView 
+              <ChatView
                 messages={messages}
                 isLoading={isLoading}
                 onSendMessage={sendMessage}

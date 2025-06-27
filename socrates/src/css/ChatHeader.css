@@ -151,23 +151,34 @@
 .chat-actions {
   display: flex;
   gap: 8px;
+  margin-left: auto; /* Push actions to the right */
 }
 
 .chat-action {
   background: none;
   border: none;
-  color: #888888;
+  color: var(--text-color-subtle);
   cursor: pointer;
-  font-size: 18px;
   padding: 8px;
   border-radius: 6px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-action svg {
+  transition: all 0.2s ease;
 }
 
 .chat-action:hover {
-  background: #333333;
-  color: #f0f6fc;
+  background: var(--hover-bg);
+  color: var(--text-color);
   transform: scale(1.1);
+}
+
+.chat-action:hover svg {
+  stroke: var(--primary-color);
 }
 
 .chat-action:active {
@@ -199,39 +210,39 @@
   .chat-header {
     padding: 12px 16px;
   }
-  
+
   .sidebar-toggle-btn {
     padding: 6px 10px;
     font-size: 14px;
     min-width: 36px;
   }
-  
+
   .split-mode-indicator {
     padding: 4px 8px;
     font-size: 11px;
   }
-  
+
   .split-icon {
     font-size: 12px;
   }
-  
+
   .header-user-info {
     display: none;
   }
-  
+
   .chat-title-main {
     font-size: 15px;
   }
-  
+
   .chat-actions {
     gap: 4px;
   }
-  
+
   .chat-action {
     padding: 6px;
     font-size: 16px;
   }
-  
+
   .chat-action.exit-split {
     padding: 4px 6px;
     min-width: 28px;
@@ -241,9 +252,15 @@
 
 /* Animation for toggle button */
 @keyframes togglePulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .sidebar-toggle-btn:focus {

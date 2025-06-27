@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  cuda-compiler:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: cuda-tutor-compiler
+    container_name: cuda-compiler
+    volumes:
+      - /tmp/cuda_tutor_compile:/workspace
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    mem_limit: 512m
+    cpus: 1.0
+    network_mode: none

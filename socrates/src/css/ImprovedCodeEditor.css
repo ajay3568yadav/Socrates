@@ -1,4 +1,4 @@
-/* ImprovedCodeEditor.css */
+/* Enhanced ImprovedCodeEditor.css with compilation and execution results */
 .improved-code-editor {
   display: flex;
   flex-direction: column;
@@ -83,7 +83,7 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .action-btn {
@@ -92,14 +92,16 @@
   border: 1px solid #30363d;
   border-radius: 6px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
+  gap: 4px;
+  min-width: 60px;
   height: 32px;
+  font-weight: 500;
 }
 
 .action-btn:hover {
@@ -110,6 +112,32 @@
 
 .action-btn:active {
   transform: translateY(0);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.action-btn.compile-btn {
+  background: #f97316;
+  border-color: #fb923c;
+  color: white;
+}
+
+.action-btn.compile-btn:hover {
+  background: #ea580c;
+}
+
+.action-btn.run-btn {
+  background: #22c55e;
+  border-color: #16a34a;
+  color: white;
+}
+
+.action-btn.run-btn:hover {
+  background: #16a34a;
 }
 
 .action-btn.close-btn {
@@ -127,8 +155,24 @@
 .editor-content {
   flex: 1;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   position: relative;
+}
+
+.editor-content.with-results {
+  /* When results are shown, split the space */
+}
+
+.code-section {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.editor-content.with-results .code-section {
+  flex: 0.6; /* Take 60% when results are shown */
 }
 
 .code-textarea {
@@ -174,6 +218,169 @@
   background: #484f58;
 }
 
+/* Results Section */
+.results-section {
+  flex: 0.4; /* Take 40% when shown */
+  background: #010409;
+  border-top: 2px solid #30363d;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.results-section.success {
+  border-top-color: #238636;
+}
+
+.results-section.error {
+  border-top-color: #da3633;
+}
+
+.results-section.compiled {
+  border-top-color: #f97316;
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  flex-shrink: 0;
+}
+
+.results-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0f6fc;
+  margin: 0;
+}
+
+.results-icon {
+  font-size: 14px;
+}
+
+.results-toggle {
+  background: none;
+  border: none;
+  color: #7d8590;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.results-toggle:hover {
+  background: #30363d;
+  color: #f0f6fc;
+}
+
+.results-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.result-section {
+  margin-bottom: 16px;
+}
+
+.result-section:last-child {
+  margin-bottom: 0;
+}
+
+.result-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f0f6fc;
+  margin: 0 0 8px 0;
+}
+
+.status {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status.success {
+  background: #238636;
+  color: white;
+}
+
+.status.error {
+  background: #da3633;
+  color: white;
+}
+
+.exit-code {
+  margin-left: 8px;
+  font-size: 10px;
+  color: #7d8590;
+  font-weight: normal;
+}
+
+.result-output {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #f0f6fc;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.result-output.error {
+  color: #f85149;
+  border-color: #da3633;
+  background: #0d1117;
+}
+
+.result-output.test-script {
+  background: #161b22;
+  border-color: #1f6feb;
+  color: #79c0ff;
+}
+
+.execution-stats {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #7d8590;
+}
+
+.results-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.results-content::-webkit-scrollbar-track {
+  background: #010409;
+}
+
+.results-content::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 3px;
+}
+
+.results-content::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
 /* Footer */
 .editor-footer {
   display: flex;
@@ -200,6 +407,16 @@
 
 .stat.modified {
   color: #f85149;
+  font-weight: 600;
+}
+
+.stat.success {
+  color: #238636;
+  font-weight: 600;
+}
+
+.stat.error {
+  color: #da3633;
   font-weight: 600;
 }
 
@@ -263,31 +480,34 @@
 /* Responsive design */
 @media (max-width: 768px) {
   .code-editor-header {
-    padding: 10px 12px;
-  }
-  
-  .header-left {
+    padding: 8px 12px;
+    flex-wrap: wrap;
     gap: 8px;
   }
   
-  .title-text {
-    font-size: 13px;
-  }
-  
-  .language-badge {
-    font-size: 9px;
-    padding: 3px 6px;
+  .header-actions {
+    gap: 4px;
   }
   
   .action-btn {
-    min-width: 28px;
+    min-width: 50px;
     height: 28px;
-    padding: 4px 8px;
+    padding: 4px 6px;
+    font-size: 10px;
   }
   
   .code-textarea {
     padding: 12px;
     font-size: 13px;
+  }
+  
+  .results-section {
+    flex: 0.5; /* Take more space on mobile */
+  }
+  
+  .result-output {
+    font-size: 11px;
+    max-height: 150px;
   }
   
   .editor-footer {
@@ -313,6 +533,22 @@
   }
 }
 
+/* Animations */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.results-section {
+  animation: slideInUp 0.3s ease-out;
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .code-textarea {
@@ -321,5 +557,9 @@
   
   .language-badge {
     border: 1px solid #58a6ff;
+  }
+  
+  .result-output {
+    border-width: 2px;
   }
 }

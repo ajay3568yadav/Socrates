@@ -17,3 +17,37 @@ numpy==1.24.3
 
 # HTTP Requests
 requests==2.31.0
+
+# CUDA Programming Dependencies
+pycuda==2023.1
+cupy-cuda12x==12.3.0
+
+# GPU Computing Alternatives (choose one)
+# cupy-cuda11x==11.6.0  # For CUDA 11.x users
+# numba==0.58.1         # JIT compilation with CUDA support
+
+# Development & Utilities
+jupyter==1.0.0
+ipython==8.15.0
+matplotlib==3.7.2
+seaborn==0.12.2
+
+# Memory Management & Performance
+psutil==5.9.5
+memory-profiler==0.61.0
+
+# Math & Scientific Computing
+scipy==1.11.2
+sympy==1.12
+
+# Optional: GPU Monitoring
+# nvidia-ml-py3==7.352.0  # For GPU monitoring
+# gpustat==1.1.1          # GPU status monitoring
+
+# Development Tools
+pytest==7.4.2
+black==23.7.0
+flake8==6.0.0
+
+# API Documentation
+flask-swagger-ui==4.11.1

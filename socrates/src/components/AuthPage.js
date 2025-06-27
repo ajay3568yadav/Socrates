@@ -1,234 +1,245 @@
-import React, { useState, useEffect } from 'react';
-import '../css/AuthPage.css'; // Import your CSS file for styles
-import { createClient } from '@supabase/supabase-js';
+import React, { useState, useEffect } from "react";
+import "../css/AuthPage.css"; // Import your CSS file for styles
+import { createClient } from "@supabase/supabase-js";
 
-import supabase from '../config/supabaseClient'; // Adjust the import path as necessary
+import supabase from "../config/supabaseClient"; // Adjust the import path as necessary
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
 
+  const colors = {
+    primary: "#76B900",
+    primaryDarker: "#629900",
+    background: "#000000",
+    cardBackground: "#1a1a1a",
+    inputBackground: "#2a2a2a",
+    text: "#ffffff",
+    textSubtle: "#a0a0a0",
+    border: "#444444",
+    error: "#e53e3e",
+  };
+
   // CSS styles
   const styles = {
     container: {
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      minHeight: "100vh",
+      background: colors.background,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "20px",
+      fontFamily:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     },
     card: {
-      background: 'white',
-      borderRadius: '20px',
-      boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
-      overflow: 'hidden',
-      width: '100%',
-      maxWidth: '900px',
-      display: 'flex',
-      flexDirection: 'row'
+      background: colors.cardBackground,
+      borderRadius: "20px",
+      boxShadow: "0 25px 50px rgba(0, 0, 0, 0.15)",
+      overflow: "hidden",
+      width: "100%",
+      maxWidth: "900px",
+      display: "flex",
+      flexDirection: "row",
+      border: `1px solid ${colors.border}`,
     },
     formSection: {
-      width: '50%',
-      padding: '50px 40px'
+      width: "50%",
+      padding: "50px 40px",
     },
     illustrationSection: {
-      width: '50%',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '50px 40px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'white',
-      textAlign: 'center'
+      width: "50%",
+      background: colors.background,
+      padding: "50px 40px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: colors.text,
+      textAlign: "center",
     },
     title: {
-      fontSize: '32px',
-      fontWeight: '700',
-      color: '#2d3748',
-      marginBottom: '8px'
+      fontSize: "32px",
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: "8px",
     },
     subtitle: {
-      fontSize: '16px',
-      color: '#718096',
-      marginBottom: '40px'
+      fontSize: "16px",
+      color: colors.textSubtle,
+      marginBottom: "40px",
     },
     formGroup: {
-      marginBottom: '20px'
+      marginBottom: "20px",
     },
     label: {
-      display: 'block',
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#374151',
-      marginBottom: '8px'
+      display: "block",
+      fontSize: "14px",
+      fontWeight: "500",
+      color: colors.textSubtle,
+      marginBottom: "8px",
     },
     input: {
-      width: '100%',
-      padding: '12px 16px',
-      border: '2px solid #e2e8f0',
-      borderRadius: '10px',
-      fontSize: '16px',
-      transition: 'all 0.2s ease',
-      outline: 'none',
-      boxSizing: 'border-box'
+      width: "100%",
+      padding: "12px 16px",
+      border: `2px solid ${colors.border}`,
+      borderRadius: "10px",
+      fontSize: "16px",
+      transition: "all 0.2s ease",
+      outline: "none",
+      boxSizing: "border-box",
+      background: colors.inputBackground,
+      color: colors.text,
     },
     inputFocus: {
-      borderColor: '#667eea',
-      boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)'
+      borderColor: colors.primary,
+      boxShadow: `0 0 0 3px rgba(118, 185, 0, 0.2)`,
     },
     inputError: {
-      borderColor: '#e53e3e'
+      borderColor: colors.error,
     },
     errorText: {
-      color: '#e53e3e',
-      fontSize: '12px',
-      marginTop: '4px'
+      color: colors.error,
+      fontSize: "12px",
+      marginTop: "4px",
     },
     button: {
-      width: '100%',
-      padding: '14px 20px',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      marginBottom: '20px'
+      width: "100%",
+      padding: "14px 20px",
+      background: colors.primary,
+      color: "black",
+      border: "none",
+      borderRadius: "10px",
+      fontSize: "16px",
+      fontWeight: "600",
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+      marginBottom: "20px",
     },
     buttonHover: {
-      transform: 'translateY(-2px)',
-      boxShadow: '0 10px 20px rgba(102, 126, 234, 0.3)'
+      transform: "translateY(-2px)",
+      boxShadow: `0 10px 20px rgba(118, 185, 0, 0.3)`,
     },
     buttonDisabled: {
-      opacity: '0.6',
-      cursor: 'not-allowed',
-      transform: 'none'
+      opacity: "0.6",
+      cursor: "not-allowed",
+      transform: "none",
     },
     switchText: {
-      textAlign: 'center',
-      color: '#718096'
+      textAlign: "center",
+      color: colors.textSubtle,
     },
     switchButton: {
-      background: 'none',
-      border: 'none',
-      color: '#667eea',
-      fontWeight: '600',
-      cursor: 'pointer',
-      textDecoration: 'underline',
-      marginLeft: '4px'
+      background: "none",
+      border: "none",
+      color: colors.primary,
+      fontWeight: "600",
+      cursor: "pointer",
+      textDecoration: "underline",
+      marginLeft: "4px",
     },
     illustrationIcon: {
-      width: '120px',
-      height: '120px',
-      background: 'rgba(255, 255, 255, 0.2)',
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '60px',
-      margin: '0 auto 30px'
+      width: "120px",
+      height: "120px",
+      margin: "0 auto 30px",
     },
     illustrationTitle: {
-      fontSize: '28px',
-      fontWeight: '700',
-      marginBottom: '16px'
+      fontSize: "28px",
+      fontWeight: "700",
+      marginBottom: "16px",
+      color: colors.text,
     },
     illustrationText: {
-      fontSize: '16px',
-      opacity: '0.9',
-      lineHeight: '1.6',
-      marginBottom: '30px'
+      fontSize: "16px",
+      opacity: "0.9",
+      lineHeight: "1.6",
+      marginBottom: "30px",
     },
     featureList: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '10px'
+      display: "flex",
+      flexDirection: "column",
+      gap: "10px",
     },
     feature: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '8px',
-      fontSize: '14px',
-      opacity: '0.8'
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "8px",
+      fontSize: "14px",
+      opacity: "0.8",
     },
     spinner: {
-      width: '20px',
-      height: '20px',
-      border: '2px solid transparent',
-      borderTop: '2px solid white',
-      borderRadius: '50%',
-      animation: 'spin 1s linear infinite',
-      marginRight: '8px'
+      width: "20px",
+      height: "20px",
+      border: "2px solid transparent",
+      borderTop: "2px solid white",
+      borderRadius: "50%",
+      animation: "spin 1s linear infinite",
+      marginRight: "8px",
     },
     loadingContent: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
     },
     successCard: {
-      background: 'white',
-      borderRadius: '20px',
-      boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
-      padding: '50px 40px',
-      width: '100%',
-      maxWidth: '400px',
-      textAlign: 'center'
+      background: colors.cardBackground,
+      borderRadius: "20px",
+      boxShadow: "0 25px 50px rgba(0, 0, 0, 0.15)",
+      padding: "50px 40px",
+      width: "100%",
+      maxWidth: "400px",
+      textAlign: "center",
     },
     successIcon: {
-      width: '80px',
-      height: '80px',
-      background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'white',
-      fontSize: '30px',
-      fontWeight: 'bold',
-      margin: '0 auto 20px'
+      width: "80px",
+      height: "80px",
+      background: colors.primary,
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "black",
+      fontSize: "30px",
+      fontWeight: "bold",
+      margin: "0 auto 20px",
     },
     successTitle: {
-      fontSize: '24px',
-      fontWeight: '700',
-      color: '#2d3748',
-      marginBottom: '8px'
+      fontSize: "24px",
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: "8px",
     },
     successText: {
-      color: '#718096',
-      marginBottom: '30px'
+      color: colors.textSubtle,
+      marginBottom: "30px",
     },
     userInfo: {
-      background: '#f7fafc',
-      borderRadius: '10px',
-      padding: '20px',
-      marginBottom: '30px'
+      background: colors.inputBackground,
+      borderRadius: "10px",
+      padding: "20px",
+      marginBottom: "30px",
     },
     logoutButton: {
-      width: '100%',
-      padding: '12px 20px',
-      background: '#e53e3e',
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'background-color 0.2s ease'
-    }
+      width: "100%",
+      padding: "12px 20px",
+      background: "#e53e3e",
+      color: "white",
+      border: "none",
+      borderRadius: "10px",
+      fontSize: "16px",
+      fontWeight: "600",
+      cursor: "pointer",
+      transition: "background-color 0.2s ease",
+    },
   };
 
   // Check for existing session on component mount
@@ -238,22 +249,24 @@ const AuthPage = () => {
 
   const checkUserSession = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         setUser({
           id: session.user.id,
           email: session.user.email,
-          username: session.user.user_metadata?.username || 'User'
+          username: session.user.user_metadata?.username || "User",
         });
         setIsAuthenticated(true);
       }
     } catch (error) {
-      console.error('Error checking session:', error);
+      console.error("Error checking session:", error);
     }
   };
   // Add keyframes for spinner animation and auth state listener
   useEffect(() => {
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
       @keyframes spin {
         0% { transform: rotate(0deg); }
@@ -271,21 +284,21 @@ const AuthPage = () => {
     document.head.appendChild(style);
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            username: session.user.user_metadata?.username || 'User'
-          });
-          setIsAuthenticated(true);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email,
+          username: session.user.user_metadata?.username || "User",
+        });
+        setIsAuthenticated(true);
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+        setIsAuthenticated(false);
       }
-    );
+    });
 
     return () => {
       document.head.removeChild(style);
@@ -295,15 +308,15 @@ const AuthPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -318,7 +331,7 @@ const AuthPage = () => {
     const hasUppercase = /[A-Z]/.test(password);
     const hasLowercase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
-    
+
     return hasMinLength && hasUppercase && hasLowercase && hasNumbers;
   };
 
@@ -329,38 +342,39 @@ const AuthPage = () => {
     if (isLogin) {
       // Login validation
       if (!formData.email) {
-        newErrors.email = 'Email is required';
+        newErrors.email = "Email is required";
       } else if (!validateEmail(formData.email)) {
-        newErrors.email = 'Please enter a valid email';
+        newErrors.email = "Please enter a valid email";
       }
 
       if (!formData.password) {
-        newErrors.password = 'Password is required';
+        newErrors.password = "Password is required";
       }
     } else {
       // Signup validation
       if (!formData.username) {
-        newErrors.username = 'Username is required';
+        newErrors.username = "Username is required";
       } else if (formData.username.length < 3) {
-        newErrors.username = 'Username must be at least 3 characters';
+        newErrors.username = "Username must be at least 3 characters";
       }
 
       if (!formData.email) {
-        newErrors.email = 'Email is required';
+        newErrors.email = "Email is required";
       } else if (!validateEmail(formData.email)) {
-        newErrors.email = 'Please enter a valid email';
+        newErrors.email = "Please enter a valid email";
       }
 
       if (!formData.password) {
-        newErrors.password = 'Password is required';
+        newErrors.password = "Password is required";
       } else if (!validatePassword(formData.password)) {
-        newErrors.password = 'Password must be at least 8 characters with uppercase, lowercase, and numbers';
+        newErrors.password =
+          "Password must be at least 8 characters with uppercase, lowercase, and numbers";
       }
 
       if (!formData.confirmPassword) {
-        newErrors.confirmPassword = 'Please confirm your password';
+        newErrors.confirmPassword = "Please confirm your password";
       } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
+        newErrors.confirmPassword = "Passwords do not match";
       }
     }
 
@@ -368,36 +382,36 @@ const AuthPage = () => {
 
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
-      
+
       try {
         if (isLogin) {
           // Handle Login
-          console.log('Attempting login with:', { email: formData.email });
-          
+          console.log("Attempting login with:", { email: formData.email });
+
           const { data, error } = await supabase.auth.signInWithPassword({
             email: formData.email.trim(),
             password: formData.password,
           });
 
           if (error) {
-            console.error('Login error:', error);
+            console.error("Login error:", error);
             setErrors({ submit: error.message });
           } else if (data.user) {
             // Fetch user profile from User table
             const { data: userProfile, error: profileError } = await supabase
-              .from('User')
-              .select('username')
-              .eq('id', data.user.id)
+              .from("User")
+              .select("username")
+              .eq("id", data.user.id)
               .single();
 
             if (profileError) {
-              console.error('Profile fetch error:', profileError);
+              console.error("Profile fetch error:", profileError);
             }
 
             setUser({
               id: data.user.id,
               email: data.user.email,
-              username: userProfile?.username || 'User'
+              username: userProfile?.username || "User",
             });
             setIsAuthenticated(true);
           }
@@ -408,77 +422,90 @@ const AuthPage = () => {
             password: formData.password,
             options: {
               data: {
-                username: formData.username.trim()
-              }
-            }
+                username: formData.username.trim(),
+              },
+            },
           };
-          
-          console.log('Attempting signup with:', { 
-            email: signupData.email, 
+
+          console.log("Attempting signup with:", {
+            email: signupData.email,
             username: signupData.options.data.username,
-            passwordLength: signupData.password.length 
+            passwordLength: signupData.password.length,
           });
 
           const { data, error } = await supabase.auth.signUp(signupData);
 
           if (error) {
-            console.error('Signup error:', error);
-            console.error('Error details:', {
+            console.error("Signup error:", error);
+            console.error("Error details:", {
               message: error.message,
               status: error.status,
-              details: error
+              details: error,
             });
-            
+
             // Handle specific error cases
-            if (error.message.includes('email')) {
-              setErrors({ submit: 'Invalid email format or email already exists' });
-            } else if (error.message.includes('password')) {
-              setErrors({ submit: 'Password must be at least 8 characters with uppercase, lowercase, and numbers' });
+            if (error.message.includes("email")) {
+              setErrors({
+                submit: "Invalid email format or email already exists",
+              });
+            } else if (error.message.includes("password")) {
+              setErrors({
+                submit:
+                  "Password must be at least 8 characters with uppercase, lowercase, and numbers",
+              });
             } else {
               setErrors({ submit: `Signup failed: ${error.message}` });
             }
           } else if (data.user) {
-            console.log('Signup successful, user created:', data.user.id);
-            
+            console.log("Signup successful, user created:", data.user.id);
+
             // Insert user data into User table
             const insertData = {
               id: data.user.id,
               username: formData.username.trim(),
               email: formData.email.trim(),
-              created_at: new Date().toISOString()
+              created_at: new Date().toISOString(),
             };
-            
-            console.log('Inserting user profile:', insertData);
+
+            console.log("Inserting user profile:", insertData);
 
             const { error: insertError } = await supabase
-              .from('User')
+              .from("User")
               .insert([insertData]);
 
             if (insertError) {
-              console.error('Error inserting user profile:', insertError);
-              setErrors({ submit: 'Account created but profile setup failed. Please contact support.' });
+              console.error("Error inserting user profile:", insertError);
+              setErrors({
+                submit:
+                  "Account created but profile setup failed. Please contact support.",
+              });
             } else {
-              console.log('User profile inserted successfully');
-              
+              console.log("User profile inserted successfully");
+
               setUser({
                 id: data.user.id,
                 email: formData.email,
-                username: formData.username
+                username: formData.username,
               });
               setIsAuthenticated(true);
-              
+
               // Show success message for email verification if needed
               if (!data.session) {
-                setErrors({ submit: 'Account created successfully! Please check your email to verify your account.' });
+                setErrors({
+                  submit:
+                    "Account created successfully! Please check your email to verify your account.",
+                });
               }
             }
           }
         }
       } catch (error) {
-        console.error('Unexpected authentication error:', error);
-        setErrors({ submit: 'An unexpected error occurred. Please try again.' });
+        console.error("Unexpected authentication error:", error);
+        setErrors({
+          submit: "An unexpected error occurred. Please try again.",
+        });
       }
-      
+
       setIsLoading(false);
     }
   };
@@ -489,13 +516,13 @@ const AuthPage = () => {
       setIsAuthenticated(false);
       setUser(null);
       setFormData({
-        username: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
       });
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error("Error logging out:", error);
     }
   };
 
@@ -503,10 +530,10 @@ const AuthPage = () => {
     setIsLogin(!isLogin);
     setErrors({});
     setFormData({
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
     });
   };
 
@@ -517,22 +544,32 @@ const AuthPage = () => {
           <div style={styles.successIcon}>✓</div>
           <h2 style={styles.successTitle}>Welcome!</h2>
           <p style={styles.successText}>You're successfully logged in</p>
-          
+
           <div style={styles.userInfo}>
-            <p style={{ fontSize: '14px', color: '#718096', marginBottom: '4px' }}>
+            <p
+              style={{
+                fontSize: "14px",
+                color: colors.textSubtle,
+                marginBottom: "4px",
+              }}
+            >
               Logged in as:
             </p>
-            <p style={{ fontWeight: '600', color: '#2d3748' }}>{user.email}</p>
+            <p style={{ fontWeight: "600", color: colors.text }}>
+              {user.email}
+            </p>
             {user.username && (
-              <p style={{ fontSize: '14px', color: '#718096' }}>@{user.username}</p>
+              <p style={{ fontSize: "14px", color: colors.textSubtle }}>
+                @{user.username}
+              </p>
             )}
           </div>
 
           <button
             onClick={handleLogout}
             style={styles.logoutButton}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#c53030'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#e53e3e'}
+            onMouseOver={(e) => (e.target.style.backgroundColor = "#c53030")}
+            onMouseOut={(e) => (e.target.style.backgroundColor = "#e53e3e")}
           >
             Logout
           </button>
@@ -548,13 +585,12 @@ const AuthPage = () => {
         <div style={styles.formSection} className="form-section">
           <div>
             <h2 style={styles.title}>
-              {isLogin ? 'Welcome Back' : 'Create Account'}
+              {isLogin ? "Welcome Back" : "Create Account"}
             </h2>
             <p style={styles.subtitle}>
-              {isLogin 
-                ? 'Sign in to your account to continue' 
-                : 'Join us and start your journey today'
-              }
+              {isLogin
+                ? "Sign in to your account to continue"
+                : "Join us and start your journey today"}
             </p>
           </div>
 
@@ -569,7 +605,7 @@ const AuthPage = () => {
                   onChange={handleInputChange}
                   style={{
                     ...styles.input,
-                    ...(errors.username ? styles.inputError : {})
+                    ...(errors.username ? styles.inputError : {}),
                   }}
                   placeholder="Enter your username"
                 />
@@ -588,13 +624,11 @@ const AuthPage = () => {
                 onChange={handleInputChange}
                 style={{
                   ...styles.input,
-                  ...(errors.email ? styles.inputError : {})
+                  ...(errors.email ? styles.inputError : {}),
                 }}
                 placeholder="Enter your email"
               />
-              {errors.email && (
-                <p style={styles.errorText}>{errors.email}</p>
-              )}
+              {errors.email && <p style={styles.errorText}>{errors.email}</p>}
             </div>
 
             <div style={styles.formGroup}>
@@ -606,7 +640,7 @@ const AuthPage = () => {
                 onChange={handleInputChange}
                 style={{
                   ...styles.input,
-                  ...(errors.password ? styles.inputError : {})
+                  ...(errors.password ? styles.inputError : {}),
                 }}
                 placeholder="Enter your password"
               />
@@ -625,7 +659,7 @@ const AuthPage = () => {
                   onChange={handleInputChange}
                   style={{
                     ...styles.input,
-                    ...(errors.confirmPassword ? styles.inputError : {})
+                    ...(errors.confirmPassword ? styles.inputError : {}),
                   }}
                   placeholder="Confirm your password"
                 />
@@ -640,7 +674,7 @@ const AuthPage = () => {
               disabled={isLoading}
               style={{
                 ...styles.button,
-                ...(isLoading ? styles.buttonDisabled : {})
+                ...(isLoading ? styles.buttonDisabled : {}),
               }}
               onMouseOver={(e) => {
                 if (!isLoading) {
@@ -649,8 +683,8 @@ const AuthPage = () => {
               }}
               onMouseOut={(e) => {
                 if (!isLoading) {
-                  e.target.style.transform = 'none';
-                  e.target.style.boxShadow = 'none';
+                  e.target.style.transform = "none";
+                  e.target.style.boxShadow = "none";
                 }
               }}
             >
@@ -659,41 +693,55 @@ const AuthPage = () => {
                   <div style={styles.spinner}></div>
                   Processing...
                 </div>
+              ) : isLogin ? (
+                "Sign In"
               ) : (
-                isLogin ? 'Sign In' : 'Create Account'
+                "Create Account"
               )}
             </button>
 
             <div style={styles.switchText}>
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              {isLogin
+                ? "Don't have an account? "
+                : "Already have an account? "}
               <button
                 onClick={switchMode}
                 style={styles.switchButton}
-                onMouseOver={(e) => e.target.style.color = '#5a67d8'}
-                onMouseOut={(e) => e.target.style.color = '#667eea'}
+                onMouseOver={(e) =>
+                  (e.target.style.color = colors.primaryDarker)
+                }
+                onMouseOut={(e) => (e.target.style.color = colors.primary)}
               >
-                {isLogin ? 'Sign up' : 'Sign in'}
+                {isLogin ? "Sign up" : "Sign in"}
               </button>
             </div>
           </div>
         </div>
 
         {/* Illustration Section */}
-        <div style={styles.illustrationSection} className="illustration-section">
+        <div
+          style={styles.illustrationSection}
+          className="illustration-section"
+        >
           <div>
             <div style={styles.illustrationIcon}>
-              {isLogin ? '👋' : '🚀'}
+              <img
+                src="/socratic-logo.png"
+                alt="Socratic Logo"
+                style={{ width: "100%", height: "100%" }}
+              />
             </div>
-            <h3 style={styles.illustrationTitle}>
-              {isLogin ? 'Hello Again!' : 'Start Your Journey'}
-            </h3>
+            <h3 style={styles.illustrationTitle}>Welcome to Socratic AI</h3>
             <p style={styles.illustrationText}>
-              {isLogin 
-                ? 'We are happy to see you back. Sign in to continue where you left off.'
-                : 'Create your account and unlock amazing features. Join thousands of satisfied users.'
-              }
+              A GPU-accelerated AI tutoring system that helps students with data
+              science.
+              <br />
+              <br />
+              {isLogin
+                ? "Sign in to continue where you left off."
+                : "Create an account to start your journey."}
             </p>
-            
+
             <div style={styles.featureList}>
               <div style={styles.feature}>
                 <span>✓</span>

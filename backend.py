@@ -758,7 +758,7 @@ Provide a helpful answer:"""
         try:
             response = requests.post("http://localhost:11434/api/generate", 
                 json={
-                    "model": "llama3.2:latest",
+                    "model": "deepseek-r1:latest",
                     "prompt": prompt,
                     "stream": stream,  # Enable streaming if requested
                     "options": {

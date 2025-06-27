@@ -1,49 +1,61 @@
-import React, { useState, useRef, useEffect } from 'react';
-import '../css/WelcomeView.css'; 
+import React, { useState, useRef, useEffect } from "react";
+import "../css/WelcomeView.css";
 
 const WelcomeView = ({ onSendMessage, user, codePanelOpen = false }) => {
-  const [inputValue, setInputValue] = useState('');
-  const [activeTab, setActiveTab] = useState('All');
+  const [inputValue, setInputValue] = useState("");
+  const [activeTab, setActiveTab] = useState("All");
   const textareaRef = useRef(null);
 
-  const tabs = ['All', 'Text', 'Image', 'Video', 'Music', 'Analytics'];
-  
+  const tabs = ["All", "Text", "Image", "Video", "Music", "Analytics"];
+
   const quickActions = [
     {
-      icon: '📚',
-      title: 'CUDA Basics',
-      description: 'Learn the fundamentals of CUDA programming',
-      question: 'What is CUDA and why is it useful?'
+      icon: "📚",
+      title: "CUDA Basics",
+      description: "Learn the fundamentals of CUDA programming",
+      question: "What is CUDA and why is it useful?",
     },
     {
-      icon: '⚡',
-      title: 'Kernel Examples',
-      description: 'Get started with your first CUDA kernel',
-      question: 'Show me a simple CUDA kernel example'
+      icon: "⚡",
+      title: "Kernel Examples",
+      description: "Get started with your first CUDA kernel",
+      question: "Show me a simple CUDA kernel example",
     },
     {
-      icon: '🧠',
-      title: 'Memory Optimization',
-      description: 'Master efficient memory usage patterns',
-      question: 'How do I optimize memory access in CUDA?'
+      icon: "🧠",
+      title: "Memory Optimization",
+      description: "Master efficient memory usage patterns",
+      question: "How do I optimize memory access in CUDA?",
     },
     {
-      icon: '🏆',
-      title: 'Best Practices',
-      description: 'Professional CUDA development tips',
-      question: 'What are the best practices for CUDA programming?'
-    }
+      icon: "🏆",
+      title: "Best Practices",
+      description: "Professional CUDA development tips",
+      question: "What are the best practices for CUDA programming?",
+    },
+    {
+      icon: "🏃‍♂️",
+      title: "GPU Performance",
+      description: "Optimize GPU performance",
+      question: "How can I optimize GPU performance?",
+    },
+    {
+      icon: "⚙️",
+      title: "Debugging",
+      description: "Debugging CUDA programs",
+      question: "How can I debug CUDA programs?",
+    },
   ];
 
   const handleSubmit = () => {
     if (inputValue.trim()) {
       onSendMessage(inputValue);
-      setInputValue('');
+      setInputValue("");
     }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -56,8 +68,9 @@ const WelcomeView = ({ onSendMessage, user, codePanelOpen = false }) => {
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 120) + "px";
     }
   }, [inputValue]);
 
@@ -66,37 +79,41 @@ const WelcomeView = ({ onSendMessage, user, codePanelOpen = false }) => {
       return user.user_metadata.full_name;
     }
     if (user?.email) {
-      return user.email.split('@')[0];
+      return user.email.split("@")[0];
     }
-    return 'there';
+    return "there";
   };
 
   // Calculate width when code panel is open
-  const contentWidth = codePanelOpen ? 'calc(100% - var(--code-panel-width, 50%))' : '100%';
+  const contentWidth = codePanelOpen
+    ? "calc(100% - var(--code-panel-width, 50%))"
+    : "100%";
 
   return (
-    <div 
+    <div
       className="welcome-container"
-      style={{ 
+      style={{
         width: contentWidth,
-        transition: 'width 0.3s ease',
-        maxWidth: codePanelOpen ? 'none' : '100%'
+        transition: "width 0.3s ease",
+        maxWidth: codePanelOpen ? "none" : "100%",
       }}
     >
-      <div className="welcome-icon">🚀</div>
+      <div className="welcome-icon">
+        <img src="/socratic-logo.png" alt="Socratic Logo" />
+      </div>
 
       <h1 className="welcome-title">
-        How can I help you today{user ? `, ${getUserName()}` : ''}?
+        How can I help you today{user ? `, ${getUserName()}` : ""}?
       </h1>
-      
+
       <p className="welcome-subtitle">
-        Ask me anything about CUDA programming, GPU optimization, or parallel computing.
-        I'm here to help you master GPU development!
+        Ask me anything about CUDA programming, GPU optimization, or parallel
+        computing. I'm here to help you master GPU development!
       </p>
 
       <div className="quick-actions">
         {quickActions.map((action, index) => (
-          <div 
+          <div
             key={index}
             onClick={() => handleQuickAction(action.question)}
             className="quick-action"
@@ -110,11 +127,11 @@ const WelcomeView = ({ onSendMessage, user, codePanelOpen = false }) => {
 
       <div className="input-section">
         <div className="input-tabs">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`input-tab ${activeTab === tab ? 'active' : ''}`}
+              className={`input-tab ${activeTab === tab ? "active" : ""}`}
             >
               {tab}
             </button>
@@ -122,8 +139,6 @@ const WelcomeView = ({ onSendMessage, user, codePanelOpen = false }) => {
         </div>
 
         <div className="input-container">
-          <div className="input-icon">🚀</div>
-          
           <textarea
             ref={textareaRef}
             value={inputValue}
@@ -133,10 +148,8 @@ const WelcomeView = ({ onSendMessage, user, codePanelOpen = false }) => {
             className="input-field"
             rows={1}
           />
-          
           <div className="input-actions">
-            <button className="input-action">🎤</button>
-            <button 
+            <button
               onClick={handleSubmit}
               disabled={!inputValue.trim()}
               className="send-btn"

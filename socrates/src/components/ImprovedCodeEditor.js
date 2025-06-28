@@ -828,7 +828,11 @@ const ImprovedCodeEditor = ({
             disabled={!code.trim() || isLoading}
             title="Ask AI to review this code"
           >
-            {isLoading ? <>⏳ Reviewing...</> : <>🔍 Ask AI to Review</>}
+            {isLoading ? (
+              <>Reviewing…</>
+            ) : (
+              <>Ask AI to Review</>
+            )}
           </button>
         </div>
       </div>

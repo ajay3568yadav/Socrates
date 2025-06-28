@@ -15,11 +15,11 @@
 
 .chat-item.active {
   background: #333333;
-  border-left: 3px solid #22c55e;
+  border-left: 3px solid #84c400;
 }
 
 .chat-item.active .chat-title {
-  color: #22c55e;
+  color: #84c400;
 }
 
 .chat-avatar {

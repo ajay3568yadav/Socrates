@@ -75,8 +75,6 @@
   margin-top: 20px;
 }
 
-
-
 /* Scroll to bottom button - centered */
 .scroll-to-bottom-btn {
   position: absolute;
@@ -121,15 +119,14 @@
 /* Chat Input Wrapper */
 .chat-input-wrapper {
   flex-shrink: 0;
-  background: #1a1a1a;
-  border-top: 1px solid #333333;
+  border-top: none; /* Remove the horizontal line */
   display: flex;
   justify-content: center;
 }
 
 .chat-view.split-pane-mode .chat-input-wrapper {
   background: #0d1117;
-  border-top-color: #30363d;
+  border-top: none; /* Remove the horizontal line */
 }
 
 /* Constrain chat input to match messages width */
@@ -156,7 +153,8 @@
   padding-top: 0;
 }
 
-/* Hover effects for message interaction */
+/* REMOVED PROBLEMATIC HOVER EFFECTS - This was causing text wrapping */
+/* 
 .message.assistant:hover {
   background: rgba(22, 27, 34, 0.3);
   transition: background-color 0.2s ease;
@@ -165,11 +163,20 @@
   padding-left: 12px;
   padding-right: 12px;
 }
+*/
 
+/* Keep basic transition but no layout changes */
 .message.assistant {
   transition: background-color 0.2s ease;
   border-radius: 0;
   position: relative;
+}
+
+/* Optional: Add subtle hover effect without changing layout */
+.message.assistant:hover {
+  background: rgba(22, 27, 34, 0.2);
+  transition: background-color 0.2s ease;
+  /* NO margin/padding changes that cause text wrapping */
 }
 
 /* Better visual separation between different conversation turns */

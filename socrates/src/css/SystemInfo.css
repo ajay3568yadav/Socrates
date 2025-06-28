@@ -1,0 +1,204 @@
+/* System Info Modal and Button Styles */
+
+.system-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.system-modal-content {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: auto;
+  color: #f0f6fc;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.system-modal-content h3 {
+  margin: 0;
+  color: #1f6feb;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.system-modal-content .close-btn {
+  background: none;
+  border: none;
+  color: #7d8590;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.system-modal-content .close-btn:hover {
+  color: #f0f6fc;
+  background-color: #21262d;
+}
+
+.system-info-section {
+  margin-bottom: 16px;
+}
+
+.system-info-section:not(:last-child) {
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 16px;
+}
+
+.system-info-section-title {
+  color: #f85149;
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.system-info-item {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.system-info-value {
+  color: #7ee787;
+  font-weight: 500;
+}
+
+.system-info-btn {
+  background: #DA7A00;
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.system-info-btn:hover {
+  background: #FF8C00;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(218, 122, 0, 0.3);
+}
+
+.system-info-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(218, 122, 0, 0.3);
+}
+
+.system-info-btn.message-level {
+  background: #DA7A00;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.system-info-btn.message-level:hover {
+  background: #FF8C00;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .system-modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    margin: 20px;
+    padding: 16px;
+    font-size: 13px;
+  }
+  
+  .system-modal-content h3 {
+    font-size: 16px;
+  }
+  
+  .system-info-btn {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  
+  .system-info-btn.message-level {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+}
+
+/* Scrollbar styling for modal content */
+.system-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.system-modal-content::-webkit-scrollbar-track {
+  background: #161b22;
+  border-radius: 3px;
+}
+
+.system-modal-content::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 3px;
+}
+
+.system-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* GPU status indicators */
+.gpu-status-available {
+  color: #7ee787;
+}
+
+.gpu-status-unavailable {
+  color: #f85149;
+}
+
+.metric-highlight {
+  background: rgba(126, 231, 135, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.metric-warning {
+  background: rgba(248, 81, 73, 0.1);
+  color: #f85149;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+} 

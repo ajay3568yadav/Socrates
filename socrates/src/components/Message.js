@@ -1,149 +1,158 @@
 import React, { useEffect, useRef } from 'react';
 import '../css/Message.css'; 
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPaneMode = false }) => {
   const isUser = message.role === 'user';
   const messageRef = useRef(null);
   const codeBlocksRef = useRef([]);
 
-  const formatTextContent = (content) => {
-    if (!content) return '';
-    
-    // Convert inline code - more conservative approach
-    let formatted = content.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>');
-    
-    // Handle line breaks more carefully
-    formatted = formatted.replace(/\n\n/g, '</p><p>');
-    formatted = formatted.replace(/\n/g, '<br>');
-    
-    // Wrap in paragraph tags if not already wrapped
-    if (!formatted.startsWith('<p>') && !formatted.includes('<p>')) {
-      formatted = '<p>' + formatted + '</p>';
-    }
-    
-    return formatted;
-  };
-
-  const extractCodeBlocks = (content) => {
-    // Clear previous code blocks
-    codeBlocksRef.current = [];
-    
-    // First, extract and replace code blocks with styled blocks
+  // Parse content into blocks (text/code)
+  const parseContentBlocks = (content) => {
+    if (!content) return [];
+    const blocks = [];
+    let lastIndex = 0;
+    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+    let match;
     let codeBlockIndex = 0;
-    
-    // Extract code blocks with better regex
-    content = content.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-      const placeholder = `__CODE_BLOCK_${codeBlockIndex}__`;
-      
-      // Store code block data for event handlers
-      codeBlocksRef.current.push({
-        index: codeBlockIndex,
-        language: lang || 'text', 
-        code: code.trim()
+    while ((match = codeBlockRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        // Text before code block
+        blocks.push({ type: 'text', content: content.slice(lastIndex, match.index) });
+      }
+      blocks.push({
+        type: 'code',
+        language: match[1] || 'text',
+        code: match[2],
+        index: codeBlockIndex++
       });
-      
-      codeBlockIndex++;
-      return placeholder;
-    });
-    
-    // Convert inline code
-    content = content.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>');
-    
-    // Better paragraph and line break handling
-    content = content.replace(/\n\n+/g, '</p><p>');
-    content = content.replace(/\n/g, '<br>');
-    
-    // Wrap in paragraphs if needed
-    if (!content.includes('<p>')) {
-      content = '<p>' + content + '</p>';
+      lastIndex = codeBlockRegex.lastIndex;
     }
-    
-    // Clean up empty paragraphs
-    content = content.replace(/<p><\/p>/g, '');
-    content = content.replace(/<p>\s*<\/p>/g, '');
-    
-    // Restore code blocks with enhanced action buttons
-    codeBlocksRef.current.forEach((block, index) => {
-      const placeholder = `__CODE_BLOCK_${index}__`;
-      
-      const canCompile = ['c', 'cpp', 'cuda', 'python', 'javascript', 'typescript'].includes(block.language.toLowerCase());
-      const compileButton = canCompile ? 
-        `<button class="compile-code-btn" data-code-index="${block.index}" 
-                title="Compile and run code">🔨 Compile</button>` : '';
-      
-      const codeBlockHtml = `
-        <div class="temp-code-block-container" data-language="${block.language}">
-          <div class="temp-code-header">
-            <span>${block.language.toUpperCase()}</span>
-            <div>
-              <button class="copy-code-btn" data-code-index="${block.index}" 
-                      title="Copy code">📋 Copy</button>
-              <button class="edit-code-btn" data-code-index="${block.index}" 
-                      title="Edit in code panel">📝 Edit</button>
-              ${compileButton}
-            </div>
-          </div>
-          <pre><code>${block.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
-        </div>
-      `;
-      
-      content = content.replace(placeholder, codeBlockHtml);
-    });
-    
-    return content;
+    if (lastIndex < content.length) {
+      blocks.push({ type: 'text', content: content.slice(lastIndex) });
+    }
+    return blocks;
   };
 
-  // Set up event listeners for code block buttons
+  // Process markdown formatting for text content
+  const processMarkdown = (text) => {
+    if (!text) return '';
+    
+    let processed = text;
+    
+    // Process inline code first (highest priority to avoid conflicts)
+    processed = processed.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    
+    // Process bold text (**text** or __text__)
+    processed = processed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    processed = processed.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    
+    // Process italic text (*text* or _text_)
+    processed = processed.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    processed = processed.replace(/_([^_]+)_/g, '<em>$1</em>');
+    
+    // Process strikethrough (~~text~~)
+    processed = processed.replace(/~~(.*?)~~/g, '<del>$1</del>');
+    
+    // Process headers (# ## ### etc.)
+    processed = processed.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    processed = processed.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+    processed = processed.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+    
+    // Process unordered lists (- or * at start of line)
+    const lines = processed.split('\n');
+    let inList = false;
+    const processedLines = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isListItem = /^[\s]*[-*]\s(.+)/.test(line);
+      
+      if (isListItem) {
+        const content = line.replace(/^[\s]*[-*]\s/, '');
+        if (!inList) {
+          processedLines.push('<ul>');
+          inList = true;
+        }
+        processedLines.push(`<li>${content}</li>`);
+      } else {
+        if (inList && line.trim() === '') {
+          // Empty line in list - continue list
+          processedLines.push('');
+        } else if (inList) {
+          // Non-list item - close list
+          processedLines.push('</ul>');
+          inList = false;
+          processedLines.push(line);
+        } else {
+          processedLines.push(line);
+        }
+      }
+    }
+    
+    // Close list if still open
+    if (inList) {
+      processedLines.push('</ul>');
+    }
+    
+    processed = processedLines.join('\n');
+    
+    // Process ordered lists (1. 2. etc.)
+    processed = processed.replace(/^\d+\.\s(.+)/gm, '<ol><li>$1</li></ol>');
+    
+    // Clean up multiple consecutive ol tags
+    processed = processed.replace(/<\/ol>\s*<ol>/g, '');
+    
+    // Process links [text](url)
+    processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    // Process line breaks
+    processed = processed.replace(/\n/g, '<br>');
+    
+    return processed;
+  };
+
+  // Set up event listeners for code block buttons (copy/edit/compile)
   useEffect(() => {
     const messageElement = messageRef.current;
     if (!messageElement) return;
-
+    
     const handleCopyClick = (event) => {
       const button = event.target.closest('.copy-code-btn');
       if (!button) return;
-      
       const codeIndex = parseInt(button.dataset.codeIndex);
       const codeBlock = codeBlocksRef.current.find(block => block.index === codeIndex);
-      
       if (codeBlock) {
         navigator.clipboard.writeText(codeBlock.code).then(() => {
-          const originalText = button.textContent;
-          button.textContent = '✓ Copied';
-          button.style.color = '#22c55e';
+          const originalText = button.innerHTML;
+          button.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 10L10 13L17 6" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>';
           setTimeout(() => {
-            button.textContent = originalText;
-            button.style.color = '';
+            button.innerHTML = originalText;
           }, 2000);
         }).catch(err => {
           console.error('Failed to copy code:', err);
         });
       }
     };
-
+    
     const handleEditClick = (event) => {
       const button = event.target.closest('.edit-code-btn');
       if (!button) return;
-      
       const codeIndex = parseInt(button.dataset.codeIndex);
       const codeBlock = codeBlocksRef.current.find(block => block.index === codeIndex);
-      
       if (codeBlock && onOpenCodeEditor) {
         onOpenCodeEditor(codeBlock.code, codeBlock.language);
       }
     };
-
+    
     const handleCompileClick = (event) => {
       const button = event.target.closest('.compile-code-btn');
       if (!button) return;
-      
       const codeIndex = parseInt(button.dataset.codeIndex);
       const codeBlock = codeBlocksRef.current.find(block => block.index === codeIndex);
-      
       if (codeBlock && onOpenCodeEditor) {
-        // Open in code editor
         onOpenCodeEditor(codeBlock.code, codeBlock.language);
-        
-        // Show feedback
         const originalText = button.textContent;
         const originalBg = button.style.background;
         button.textContent = '⏳ Opening...';
@@ -152,23 +161,19 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
           button.textContent = originalText;
           button.style.background = originalBg;
         }, 2000);
-        
-        // Send a message to request test generation and compilation
         if (onSendMessage && !splitPaneMode) {
           setTimeout(() => {
-            const compileRequest = `Please generate a test script and help me compile and run this ${codeBlock.language.toUpperCase()} code:\n\n\`\`\`${codeBlock.language}\n${codeBlock.code}\n\`\`\``;
+            const compileRequest = `Please generate a test script and help me compile and run this ${codeBlock.language.toUpperCase()} code:\n\n\`\`\`${codeBlock.language}\n${codeBlock.code}\n\`\`\`\n`;
             onSendMessage(compileRequest);
           }, 500);
         }
       }
     };
-
-    // Add event listeners with delegation
+    
     messageElement.addEventListener('click', handleCopyClick);
     messageElement.addEventListener('click', handleEditClick);
     messageElement.addEventListener('click', handleCompileClick);
-
-    // Cleanup
+    
     return () => {
       messageElement.removeEventListener('click', handleCopyClick);
       messageElement.removeEventListener('click', handleEditClick);
@@ -176,39 +181,121 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
     };
   }, [message.content, onOpenCodeEditor, onSendMessage, splitPaneMode]);
 
+  // Render content with syntax highlighting for code blocks
   const renderContent = () => {
-    if (isUser) {
-      return (
-        <div
-          className="message-text"
-          dangerouslySetInnerHTML={{
-            __html: formatTextContent(message.content)
-          }}
-        />
-      );
-    }
-
-    // For assistant messages with enhanced formatting
-    const processedContent = extractCodeBlocks(message.content || '');
+    // Parse and render blocks for both user and assistant
+    const blocks = parseContentBlocks(message.content || '');
+    // Store code blocks for event handlers
+    codeBlocksRef.current = blocks.filter(b => b.type === 'code');
     
     return (
-      <div
-        className="message-text"
-        dangerouslySetInnerHTML={{
-          __html: processedContent
-        }}
-      />
+      <div className="message-text">
+        {blocks.map((block, i) => {
+          if (block.type === 'text') {
+            // Process markdown for text blocks only
+            const processedContent = processMarkdown(block.content);
+            return (
+              <span 
+                key={i} 
+                dangerouslySetInnerHTML={{ __html: processedContent }}
+              />
+            );
+          } else if (block.type === 'code') {
+            return (
+              <div 
+                className="temp-code-block-container" 
+                key={i} 
+                style={{ 
+                  margin: '12px 0', 
+                  borderRadius: 8, 
+                  overflow: 'hidden', 
+                  background: 'none', 
+                  border: '1px solid #30363d' 
+                }}
+              >
+                <div 
+                  className="temp-code-header" 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    padding: '6px 12px', 
+                    background: '#1a1a1a', 
+                    borderBottom: '1px solid #30363d', 
+                    fontSize: 12 
+                  }}
+                >
+                  <span style={{ color: '#76B900', fontWeight: 600, letterSpacing: 0.5 }}>
+                    {block.language.toUpperCase()}
+                  </span>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <button 
+                      className="copy-code-btn" 
+                      data-code-index={block.index} 
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        color: '#7d8590', 
+                        cursor: 'pointer', 
+                        padding: 4, 
+                        borderRadius: 4, 
+                        transition: 'background 0.2s' 
+                      }} 
+                      title="Copy code"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="5" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                        <rect x="8" y="3" width="9" height="9" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                      </svg>
+                    </button>
+                    {onOpenCodeEditor && (
+                      <button 
+                        className="edit-code-btn" 
+                        data-code-index={block.index} 
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          color: '#7d8590', 
+                          cursor: 'pointer', 
+                          padding: 4, 
+                          borderRadius: 4, 
+                          transition: 'background 0.2s' 
+                        }} 
+                        title="Edit in code panel"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M14.7 3.29a1 1 0 0 1 1.41 1.42l-8.5 8.5-2.12.71.71-2.12 8.5-8.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <SyntaxHighlighter
+                  language={block.language}
+                  style={vscDarkPlus}
+                  customStyle={{ 
+                    margin: 0, 
+                    borderRadius: 0, 
+                    fontSize: 14, 
+                    background: '#1f1f1f', 
+                    padding: 16 
+                  }}
+                  showLineNumbers={false}
+                  wrapLongLines={true}
+                >
+                  {block.code}
+                </SyntaxHighlighter>
+              </div>
+            );
+          }
+          return null;
+        })}
+      </div>
     );
   };
 
   return (
-    <div 
-      ref={messageRef} 
-      className={`message ${isUser ? 'user' : 'assistant'} ${splitPaneMode ? 'split-mode' : ''}`}
-    >
-      <div className="message-avatar">
-        {isUser ? '👤' : '🤖'}
-      </div>
+    <div ref={messageRef} className={`message ${isUser ? 'user' : 'assistant'} ${splitPaneMode ? 'split-mode' : ''}`}>
       <div className="message-content">
         {renderContent()}
         {message.isError && (

@@ -1,4 +1,4 @@
-/* ChatView.css - Updated for Claude/ChatGPT style full-width layout */
+/* ChatView.css - Updated for centered chat layout with constrained width */
 .chat-view {
   flex: 1;
   display: flex;
@@ -22,6 +22,8 @@
   -webkit-scroll-behavior: smooth;
   position: relative;
   background: transparent;
+  display: flex !important;
+  justify-content: center !important;
 }
 
 .chat-view.split-pane-mode .messages-container {
@@ -30,27 +32,39 @@
 
 .messages-wrapper {
   width: 100%;
-  margin: 0;
+  max-width: 800px !important; /* Reduced conversation width */
+  margin: 0 auto !important; /* Center the wrapper */
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding: 20px 0 40px 0;
-  max-width: none;
+  padding: 20px 24px 40px 24px !important; /* Add horizontal padding */
+  box-sizing: border-box;
 }
 
 .chat-view.split-pane-mode .messages-wrapper {
-  padding: 16px 0 32px 0;
+  padding: 16px 20px 32px 20px !important;
+  max-width: 700px !important; /* Slightly smaller for split mode */
+  margin: 0 auto !important;
 }
 
-/* Individual message spacing - remove gaps for assistant messages */
-.messages-wrapper > .message.assistant {
-  margin-bottom: 0;
-  padding-bottom: 24px;
+/* Individual message containers with proper alignment */
+.messages-wrapper > .message {
+  width: 100%;
+  margin-bottom: 24px;
+  display: flex;
+  position: relative;
 }
 
 .messages-wrapper > .message.user {
+  justify-content: flex-end; /* Align user messages to the right */
   margin-bottom: 24px;
   padding-bottom: 0;
+}
+
+.messages-wrapper > .message.assistant {
+  justify-content: flex-start; /* AI messages start from left */
+  margin-bottom: 0;
+  padding-bottom: 24px;
 }
 
 .messages-wrapper > .message.assistant + .message.user {
@@ -61,11 +75,14 @@
   margin-top: 20px;
 }
 
-/* Scroll to bottom button */
+
+
+/* Scroll to bottom button - centered */
 .scroll-to-bottom-btn {
   position: absolute;
   bottom: 100px;
-  right: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -85,17 +102,16 @@
 
 .scroll-to-bottom-btn:hover {
   background: #16a34a;
-  transform: translateY(-2px);
+  transform: translateX(-50%) translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 .scroll-to-bottom-btn:active {
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .chat-view.split-pane-mode .scroll-to-bottom-btn {
-  right: 16px;
   bottom: 80px;
   width: 36px;
   height: 36px;
@@ -107,11 +123,27 @@
   flex-shrink: 0;
   background: #1a1a1a;
   border-top: 1px solid #333333;
+  display: flex;
+  justify-content: center;
 }
 
 .chat-view.split-pane-mode .chat-input-wrapper {
   background: #0d1117;
   border-top-color: #30363d;
+}
+
+/* Constrain chat input to match messages width */
+.chat-input-wrapper > * {
+  width: 100%;
+  max-width: 800px !important;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+.chat-view.split-pane-mode .chat-input-wrapper > * {
+  max-width: 700px !important;
+  padding: 0 20px;
 }
 
 /* Special styling for continuous conversation flow */
@@ -128,13 +160,15 @@
 .message.assistant:hover {
   background: rgba(22, 27, 34, 0.3);
   transition: background-color 0.2s ease;
+  border-radius: 8px;
+  margin: 0 -12px;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 .message.assistant {
   transition: background-color 0.2s ease;
   border-radius: 0;
-  margin-left: 0;
-  margin-right: 0;
   position: relative;
 }
 
@@ -165,7 +199,23 @@
   }
   
   .messages-wrapper {
-    padding: 16px 0 32px 0;
+    padding: 16px 16px 32px 16px;
+    max-width: none; /* Full width on mobile */
+  }
+  
+  .chat-view.split-pane-mode .messages-wrapper {
+    padding: 16px 16px 32px 16px;
+    max-width: none;
+  }
+  
+  .chat-input-wrapper > * {
+    padding: 0 16px;
+    max-width: none;
+  }
+  
+  .chat-view.split-pane-mode .chat-input-wrapper > * {
+    padding: 0 16px;
+    max-width: none;
   }
   
   .messages-wrapper > .message.assistant {
@@ -182,15 +232,71 @@
   
   .scroll-to-bottom-btn {
     bottom: 90px;
-    right: 16px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 36px;
     height: 36px;
     font-size: 14px;
   }
   
   .chat-view.split-pane-mode .scroll-to-bottom-btn {
-    right: 16px;
     bottom: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .messages-wrapper {
+    padding: 12px 12px 24px 12px;
+  }
+  
+  .chat-input-wrapper > * {
+    padding: 0 12px;
+  }
+  
+  .message.user .message-content {
+    max-width: 90%;
+  }
+}
+
+/* Tablet responsiveness */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .messages-wrapper {
+    max-width: 900px;
+    padding: 20px 20px 40px 20px;
+  }
+  
+  .chat-view.split-pane-mode .messages-wrapper {
+    max-width: 800px;
+  }
+  
+  .chat-input-wrapper > * {
+    max-width: 900px;
+    padding: 0 20px;
+  }
+  
+  .chat-view.split-pane-mode .chat-input-wrapper > * {
+    max-width: 800px;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1400px) {
+  .messages-wrapper {
+    max-width: 1400px;
+    padding: 24px 32px 48px 32px;
+  }
+  
+  .chat-view.split-pane-mode .messages-wrapper {
+    max-width: 1200px;
+  }
+  
+  .chat-input-wrapper > * {
+    max-width: 1400px;
+    padding: 0 32px;
+  }
+  
+  .chat-view.split-pane-mode .chat-input-wrapper > * {
+    max-width: 1200px;
   }
 }
 
@@ -247,5 +353,9 @@
   
   .scroll-to-bottom-btn {
     border: 2px solid #22c55e;
+  }
+  
+  .message.user .message-content {
+    border-color: #718096;
   }
 }

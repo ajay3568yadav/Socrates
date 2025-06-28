@@ -5,7 +5,7 @@ Enhanced code compiler with dependency management
 
 from typing import Dict, Any
 from .base import CodeCompiler
-from ..routes.dependencies import DependencyManager
+from .dependencies import DependencyManager
 
 class EnhancedCodeCompiler(CodeCompiler):
     """Enhanced compiler with dependency checking and management"""

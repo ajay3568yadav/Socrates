@@ -21,6 +21,7 @@ const ImprovedCodeEditor = ({
   const [isGeneratingTest, setIsGeneratingTest] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const textareaRef = useRef(null);
+  const lineNumbersRef = useRef(null);
 
   // API Configuration
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
@@ -222,6 +223,21 @@ const ImprovedCodeEditor = ({
     }
   };
 
+  // Handle textarea scroll to sync with line numbers
+  const handleTextareaScroll = (e) => {
+    if (lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = e.target.scrollTop;
+    }
+  };
+
+  // Generate line numbers array
+  const getLineNumbers = () => {
+    const lines = code.split('\n');
+    // Always show at least one line number, even for empty code
+    const lineCount = Math.max(1, lines.length);
+    return Array.from({ length: lineCount }, (_, i) => i + 1);
+  };
+
   const getResultStatus = () => {
     if (compilationResult && !compilationResult.success) {
       return 'error';
@@ -310,11 +326,19 @@ const ImprovedCodeEditor = ({
       {/* Editor Content */}
       <div className={`editor-content ${showResults ? 'with-results' : ''}`}>
         <div className="code-section">
+          <div className="line-numbers" ref={lineNumbersRef}>
+            {getLineNumbers().map(lineNumber => (
+              <div key={lineNumber} className="line-number">
+                {lineNumber}
+              </div>
+            ))}
+          </div>
           <textarea
             ref={textareaRef}
             value={code}
             onChange={handleCodeChange}
             onKeyDown={handleKeyDown}
+            onScroll={handleTextareaScroll}
             className="code-textarea"
             placeholder={`Write your ${language.toUpperCase()} code here...`}
             spellCheck={false}

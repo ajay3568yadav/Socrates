@@ -25,7 +25,7 @@
 }
 
 .message.user .message-avatar {
-  background: #2563eb;
+  background: #76b900;
 }
 
 .message.assistant .message-avatar {
@@ -42,7 +42,7 @@
 }
 
 .message.user .message-content {
-  background: #1f6feb;
+  background: #76b900;
   color: white;
 }
 
@@ -107,7 +107,7 @@
 
 /* Typing cursor animation */
 .typing-cursor {
-  color: #1f6feb;
+  color: #76b900;
   font-weight: bold;
   animation: blink 1s infinite;
   margin-left: 2px;

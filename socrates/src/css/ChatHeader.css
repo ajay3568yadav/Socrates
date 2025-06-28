@@ -1,4 +1,4 @@
-/* ChatHeader.css - Complete styles for the chat header */
+/* ChatHeader.css - Complete styles for the chat header with model selector */
 
 .chat-header {
   display: flex;
@@ -23,12 +23,13 @@
   min-width: 0;
 }
 
-/* Right side of header */
+/* Right side of header - Updated to accommodate model selector */
 .header-right {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 /* ===== SIDEBAR TOGGLE BUTTON ===== */
@@ -308,6 +309,10 @@
     min-height: 64px;
   }
   
+  .header-right {
+    gap: 16px;
+  }
+  
   .chat-title,
   .app-title {
     max-width: 500px;
@@ -324,6 +329,10 @@
   .chat-title,
   .app-title {
     max-width: 400px;
+  }
+  
+  .header-right {
+    gap: 10px;
   }
 }
 
@@ -351,7 +360,7 @@
   .chat-title,
   .app-title {
     font-size: 16px;
-    max-width: 200px;
+    max-width: 150px;
   }
   
   .module-badge {
@@ -400,7 +409,7 @@
   .chat-title,
   .app-title {
     font-size: 14px;
-    max-width: 120px;
+    max-width: 100px;
   }
   
   .module-badge {

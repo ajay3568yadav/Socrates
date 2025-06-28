@@ -1,4 +1,5 @@
 import React from 'react';
+import ModelSelector from './ModelSelector';
 import '../css/ChatHeader.css';
 
 const ChatHeader = ({
@@ -12,6 +13,8 @@ const ChatHeader = ({
   splitPaneMode,
   onExitSplitMode,
   onLogout,
+  selectedModel = 'deepseek-r1', // Default model
+  onModelChange = () => {}, // Model change handler
 }) => {
   // Get the appropriate icon for the sidebar toggle button
   const getSidebarToggleIcon = () => {
@@ -128,6 +131,13 @@ const ChatHeader = ({
       </div>
 
       <div className="header-right">
+        {/* Model Selector */}
+        <ModelSelector
+          selectedModel={selectedModel}
+          onModelChange={onModelChange}
+          disabled={backendStatus?.connecting || !backendStatus?.online}
+        />
+
         {/* Split pane controls */}
         {splitPaneMode && (
           <button

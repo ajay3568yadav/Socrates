@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Status and health monitoring routes
+Status and health monitoring routes with model information
 """
 
 import subprocess
@@ -20,7 +20,7 @@ def create_status_blueprint(app_systems):
     
     @bp.route('/status')
     def status():
-        """Comprehensive system status check"""
+        """Comprehensive system status check including model availability"""
         try:
             rag_system = app_systems.get('rag')
             compiler = app_systems.get('compiler')
@@ -33,7 +33,9 @@ def create_status_blueprint(app_systems):
                 'compiler_available': compiler is not None,
                 'enhanced_compiler': hasattr(compiler, 'dep_manager') if compiler else False,
                 'active_compilations': len(compiler.active_compilations) if compiler else 0,
-                'ollama_status': 'unknown'
+                'ollama_status': 'unknown',
+                'model_support': True,  # NEW: Indicate model selection is supported
+                'available_models': []  # NEW: List of available models
             }
             
             # Test Ollama connection
@@ -41,10 +43,47 @@ def create_status_blueprint(app_systems):
                 response = requests.get(config.OLLAMA_BASE_URL, timeout=5)
                 status_info['ollama_status'] = 'connected' if response.status_code == 200 else 'error'
                 status_info['ollama_url'] = config.OLLAMA_BASE_URL
+                
+                # Check available models in Ollama - NEW
+                if response.status_code == 200:
+                    models_response = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=5)
+                    if models_response.status_code == 200:
+                        ollama_models = models_response.json().get('models', [])
+                        installed_model_names = [m['name'] for m in ollama_models]
+                        
+                        # Check each configured model
+                        model_configs = config.get_model_configs()
+                        for model_id, model_config in model_configs.items():
+                            model_available = any(
+                                model_config['ollama_model'].split(':')[0] in installed_name 
+                                for installed_name in installed_model_names
+                            )
+                            
+                            fallback_available = False
+                            if model_config.get('fallback'):
+                                fallback_available = any(
+                                    model_config['fallback'].split(':')[0] in installed_name 
+                                    for installed_name in installed_model_names
+                                )
+                            
+                            status_info['available_models'].append({
+                                'id': model_id,
+                                'name': model_config['name'],
+                                'available': model_available,
+                                'fallback_available': fallback_available,
+                                'ollama_model': model_config['ollama_model'],
+                                'fallback_model': model_config.get('fallback')
+                            })
+                        
+                        status_info['ollama_models_count'] = len(installed_model_names)
+                        status_info['configured_models_count'] = len(model_configs)
+                        
             except requests.exceptions.ConnectionError:
                 status_info['ollama_status'] = 'disconnected'
+                status_info['available_models'] = []
             except Exception as e:
                 status_info['ollama_status'] = f'error: {str(e)}'
+                status_info['available_models'] = []
             
             # Check compilers
             if compiler:
@@ -94,13 +133,16 @@ def create_status_blueprint(app_systems):
                 status_info['gpu_monitoring'] = {'error': str(e)}
                 status_info['system_monitoring'] = {'error': str(e)}
             
-            # Add configuration info
+            # Add configuration info with model settings - NEW
             status_info['configuration'] = {
                 'compilation_timeout': config.COMPILATION_TIMEOUT,
                 'execution_timeout': config.EXECUTION_TIMEOUT,
                 'max_output_size': config.MAX_OUTPUT_SIZE,
                 'temp_dir': str(config.TEMP_DIR),
-                'debug_mode': config.DEBUG
+                'debug_mode': config.DEBUG,
+                'default_model': config.DEFAULT_MODEL,
+                'model_fallback_enabled': config.ENABLE_MODEL_FALLBACK,
+                'model_timeout': config.MODEL_TIMEOUT
             }
             
             return jsonify(status_info)
@@ -109,6 +151,99 @@ def create_status_blueprint(app_systems):
             print(f"❌ Error in status route: {e}")
             traceback.print_exc()
             return jsonify({'error': str(e)}), 500
+    
+    @bp.route('/models', methods=['GET'])
+    def get_models():
+        """Get available AI models - NEW ENDPOINT"""
+        try:
+            model_configs = config.get_model_configs()
+            models = []
+            
+            for model_id, model_config in model_configs.items():
+                models.append({
+                    'id': model_id,
+                    'name': model_config['name'],
+                    'description': model_config['description'],
+                    'max_tokens': model_config['max_tokens'],
+                    'temperature': model_config['temperature'],
+                    'ollama_model': model_config['ollama_model'],
+                    'has_fallback': model_config.get('fallback') is not None
+                })
+            
+            return jsonify({
+                'models': models,
+                'default_model': config.DEFAULT_MODEL,
+                'total_models': len(models),
+                'fallback_enabled': config.ENABLE_MODEL_FALLBACK
+            })
+            
+        except Exception as e:
+            print(f"❌ Error getting models: {e}")
+            return jsonify({'error': str(e)}), 500
+    
+    @bp.route('/model/status/<model_id>', methods=['GET'])
+    def check_model_status(model_id):
+        """Check if a specific model is available - NEW ENDPOINT"""
+        try:
+            model_configs = config.get_model_configs()
+            
+            if model_id not in model_configs:
+                return jsonify({
+                    'available': False,
+                    'error': 'Model not found in configuration'
+                }), 404
+            
+            model_config = model_configs[model_id]
+            
+            # Try to check if model is available in Ollama
+            try:
+                response = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=5)
+                
+                if response.status_code == 200:
+                    models_data = response.json()
+                    installed_models = [m['name'] for m in models_data.get('models', [])]
+                    
+                    # Check if the specific model is installed
+                    model_available = any(
+                        model_config['ollama_model'].split(':')[0] in installed_model 
+                        for installed_model in installed_models
+                    )
+                    
+                    # Check fallback model if main model not available
+                    fallback_available = False
+                    if not model_available and model_config.get('fallback'):
+                        fallback_available = any(
+                            model_config['fallback'].split(':')[0] in installed_model 
+                            for installed_model in installed_models
+                        )
+                    
+                    return jsonify({
+                        'model_id': model_id,
+                        'model_name': model_config['name'],
+                        'available': model_available,
+                        'fallback_available': fallback_available,
+                        'ollama_model': model_config['ollama_model'],
+                        'fallback_model': model_config.get('fallback'),
+                        'installed_models': installed_models
+                    })
+                else:
+                    return jsonify({
+                        'available': False,
+                        'error': 'Ollama service not responding'
+                    })
+                    
+            except requests.exceptions.RequestException as e:
+                return jsonify({
+                    'available': False,
+                    'error': f'Connection error: {str(e)}'
+                })
+                
+        except Exception as e:
+            print(f"❌ Error checking model status: {e}")
+            return jsonify({
+                'available': False,
+                'error': str(e)
+            }), 500
     
     @bp.route('/health')
     def health():
@@ -125,8 +260,10 @@ def create_status_blueprint(app_systems):
                 'systems': {
                     'rag': rag_system is not None,
                     'compiler': compiler is not None,
-                    'enhanced_compiler': compiler and hasattr(compiler, 'dep_manager')
-                }
+                    'enhanced_compiler': compiler and hasattr(compiler, 'dep_manager'),
+                    'model_selection': True  # NEW: Indicate model selection support
+                },
+                'default_model': config.DEFAULT_MODEL  # NEW
             })
             
         except Exception as e:
@@ -166,7 +303,9 @@ def create_status_blueprint(app_systems):
                     'compiler_system': 'enhanced' if (compiler and hasattr(compiler, 'dep_manager')) 
                                     else ('basic' if compiler else 'failed'),
                     'active_compilations': len(compiler.active_compilations) if compiler else 0,
-                    'temp_directory': str(config.TEMP_DIR)
+                    'temp_directory': str(config.TEMP_DIR),
+                    'model_selection_enabled': True,  # NEW
+                    'available_models': len(config.get_model_configs())  # NEW
                 }
             }
             

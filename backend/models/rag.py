@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RAG system for CUDA programming assistance
+RAG system for CUDA programming assistance with model selection support
 """
 
 import requests
@@ -90,7 +90,27 @@ class SimpleRAG:
         return any(keyword in query_lower for keyword in quiz_keywords)
 
     def generate_quiz_data(self, topic="CUDA programming", conversation_context=""):
-        """Generate quiz data with 3 questions"""
+        """Generate quiz data with 3 questions using default model"""
+        # Use default model configuration for backward compatibility
+        default_config = {
+            'name': 'Default AI Model',
+            'ollama_model': config.OLLAMA_MODEL,
+            'max_tokens': 2000,
+            'temperature': 0.3
+        }
+        
+        return self.generate_quiz_data_with_model(topic, conversation_context, default_config)
+
+    def generate_quiz_data_with_model(self, topic="CUDA programming", conversation_context="", model_config=None):
+        """Generate quiz data using a specific model"""
+        if model_config is None:
+            model_config = {
+                'name': 'Default AI Model',
+                'ollama_model': config.OLLAMA_MODEL,
+                'max_tokens': 2000,
+                'temperature': 0.3
+            }
+        
         # Create a prompt for quiz generation
         quiz_prompt = f"""Generate a CUDA programming quiz with exactly 3 questions based on the topic: {topic}
 
@@ -152,12 +172,12 @@ Return ONLY the JSON, no additional text:"""
         try:
             response = requests.post(f"{config.OLLAMA_BASE_URL}/api/generate", 
                 json={
-                    "model": config.OLLAMA_MODEL,
+                    "model": model_config['ollama_model'],
                     "prompt": quiz_prompt,
                     "stream": False,
                     "options": {
-                        "num_predict": 2000,
-                        "temperature": 0.3,  # Lower temperature for more consistent JSON
+                        "num_predict": model_config.get('max_tokens', 2000),
+                        "temperature": model_config.get('temperature', 0.3),
                         "top_p": 0.9,
                         "stop": ["Human:", "User:", "Assistant:"],
                         "num_ctx": 4096
@@ -189,18 +209,21 @@ Return ONLY the JSON, no additional text:"""
                     if self._validate_quiz_data(quiz_data):
                         # Ensure unique ID
                         quiz_data['quiz_id'] = str(uuid.uuid4())
+                        print(f"✅ Quiz generated successfully using {model_config['name']}")
                         return quiz_data
                     else:
+                        print(f"⚠️ Quiz validation failed for {model_config['name']}, using fallback")
                         return self._get_fallback_quiz()
                         
                 except json.JSONDecodeError as e:
-                    print(f"JSON parsing error: {e}")
+                    print(f"JSON parsing error with {model_config['name']}: {e}")
                     return self._get_fallback_quiz()
             else:
+                print(f"❌ Quiz generation failed for {model_config['name']}: HTTP {response.status_code}")
                 return self._get_fallback_quiz()
                 
         except Exception as e:
-            print(f"Error generating quiz: {e}")
+            print(f"Error generating quiz with {model_config['name']}: {e}")
             return self._get_fallback_quiz()
 
     def _validate_quiz_data(self, quiz_data):
@@ -274,8 +297,19 @@ Return ONLY the JSON, no additional text:"""
             ]
         }
     
-    def generate_response(self, query, conversation_context="", stream=False):
-        """Modified to handle quiz requests"""
+    def generate_response_with_model(self, query, conversation_context="", model_config=None, stream=False):
+        """Generate response using a specific model configuration"""
+        
+        if model_config is None:
+            # Use default configuration
+            model_config = {
+                'name': 'Default AI Model',
+                'ollama_model': config.OLLAMA_MODEL,
+                'max_tokens': 4096,
+                'temperature': 0.7
+            }
+        
+        print(f"🤖 Generating response with {model_config['name']} ({model_config['ollama_model']})")
         
         # Check if this is a quiz request
         if self.detect_quiz_request(query):
@@ -287,13 +321,13 @@ Return ONLY the JSON, no additional text:"""
                 if len(parts) > 1:
                     topic = parts[1].strip()[:50]  # Limit topic length
             
-            # Generate quiz data
-            quiz_data = self.generate_quiz_data(query, conversation_context)
+            # Generate quiz data using the selected model
+            quiz_data = self.generate_quiz_data_with_model(query, conversation_context, model_config)
             
             # Return quiz as JSON string with special marker
             return "QUIZ_DATA:" + json.dumps(quiz_data)
         
-        # Regular response generation (existing code)
+        # Regular response generation
         # 1. Retrieve relevant examples
         examples = self.search(query)
         
@@ -307,7 +341,7 @@ Return ONLY the JSON, no additional text:"""
             example_context = "General CUDA programming knowledge."
         
         if conversation_context:
-            prompt = f"""You are a helpful CUDA programming tutor. Build on our previous conversation.
+            prompt = f"""You are a helpful CUDA programming tutor using {model_config['name']}. Build on our previous conversation.
 
 Previous conversation:
 {conversation_context}
@@ -319,7 +353,7 @@ Current question: {query}
 
 Answer the current question, referencing our previous discussion when relevant. Be conversational and remember what we've discussed:"""
         else:
-            prompt = f"""You are a helpful CUDA programming tutor. Answer concisely and clearly.
+            prompt = f"""You are a helpful CUDA programming tutor using {model_config['name']}. Answer concisely and clearly.
 
 Relevant examples:
 {example_context}
@@ -328,16 +362,41 @@ Student question: {query}
 
 Provide a helpful answer:"""
         
-        # 4. Generate response
+        # 4. Generate response using the specified model
+        return self._generate_with_model(prompt, model_config, stream)
+    
+    def _generate_with_model(self, prompt, model_config, stream=False):
+        """Generate response using specified model with fallback support"""
+        
+        # Try primary model first
+        response = self._try_model_generation(prompt, model_config['ollama_model'], model_config, stream)
+        if response is not None:
+            return response
+        
+        # Try fallback model if primary fails
+        if model_config.get('fallback'):
+            print(f"⚠️ Primary model {model_config['ollama_model']} failed, trying fallback {model_config['fallback']}")
+            fallback_config = model_config.copy()
+            fallback_config['ollama_model'] = model_config['fallback']
+            
+            response = self._try_model_generation(prompt, model_config['fallback'], fallback_config, stream)
+            if response is not None:
+                return f"[Using fallback model] {response}"
+        
+        # If both fail, return error message
+        return f"I'm having trouble connecting to the {model_config['name']} model and its fallback. Please check if Ollama is running and the models are installed."
+    
+    def _try_model_generation(self, prompt, model_name, model_config, stream=False):
+        """Try to generate response with a specific model"""
         try:
             response = requests.post(f"{config.OLLAMA_BASE_URL}/api/generate", 
                 json={
-                    "model": config.OLLAMA_MODEL,
+                    "model": model_name,
                     "prompt": prompt,
                     "stream": stream,
                     "options": {
-                        "num_predict": 10000,
-                        "temperature": 0.7,
+                        "num_predict": model_config.get('max_tokens', 4096),
+                        "temperature": model_config.get('temperature', 0.7),
                         "top_p": 0.9,
                         "stop": ["Student question:", "Question:", "Human:", "User:", "Previous conversation:", "Current question:"],
                         "num_ctx": 4096,
@@ -376,16 +435,33 @@ Provide a helpful answer:"""
                             elif len(generated_text) > 50:
                                 generated_text += "..."
                     
+                    print(f"✅ Response generated successfully using {model_name}")
                     return generated_text
             else:
-                return f"I'm having trouble connecting to the AI model. Status: {response.status_code}"
+                print(f"❌ Model {model_name} returned HTTP {response.status_code}")
+                return None
                 
         except requests.exceptions.Timeout:
-            return "The AI model is taking too long to respond. Please try a simpler question."
+            print(f"⏱️ Model {model_name} timed out")
+            return None
         except requests.exceptions.ConnectionError:
-            return "Cannot connect to the AI model. Please make sure Ollama is running with: `ollama serve`"
+            print(f"🔌 Cannot connect to model {model_name}")
+            return None
         except Exception as e:
-            return f"An error occurred: {str(e)}"
+            print(f"❌ Error with model {model_name}: {str(e)}")
+            return None
+    
+    def generate_response(self, query, conversation_context="", stream=False):
+        """Original method for backward compatibility"""
+        # Use default model configuration
+        default_config = {
+            'name': 'Default AI Model',
+            'ollama_model': config.OLLAMA_MODEL,
+            'max_tokens': 4096,
+            'temperature': 0.7
+        }
+        
+        return self.generate_response_with_model(query, conversation_context, default_config, stream)
 
 # Global RAG system instance
 _rag_system = None

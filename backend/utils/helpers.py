@@ -180,11 +180,14 @@ Try simplifying your code or ask the AI tutor for optimization tips!"""
 
 def check_compiler_availability() -> Dict[str, bool]:
     """Check availability of various compilers"""
+    # Determine Python command based on OS
+    python_cmd = 'python' if platform.system() == 'Windows' else 'python3'
+    
     compilers = {
         'gcc': False,
         'g++': False,
         'nvcc': False,
-        'python3': False,
+        python_cmd: False,  # Use the OS-appropriate Python command
         'python': False
     }
     

@@ -83,7 +83,7 @@ def register_routes():
         # Import and register route blueprints
         from routes.chat import create_chat_blueprint
         from routes.compilation import create_compilation_blueprint
-        from routes.dependencies import create_dependencies_blueprint
+        from backend.compiler.dependencies import create_dependencies_blueprint
         from routes.status import create_status_blueprint
         
         # Create blueprints with system dependencies

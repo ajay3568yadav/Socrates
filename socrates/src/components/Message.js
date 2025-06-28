@@ -9,11 +9,17 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
   const formatTextContent = (content) => {
     if (!content) return '';
     
-    // Convert inline code
-    let formatted = content.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    // Convert inline code - more conservative approach
+    let formatted = content.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>');
     
-    // Convert line breaks
+    // Handle line breaks more carefully
+    formatted = formatted.replace(/\n\n/g, '</p><p>');
     formatted = formatted.replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph tags if not already wrapped
+    if (!formatted.startsWith('<p>') && !formatted.includes('<p>')) {
+      formatted = '<p>' + formatted + '</p>';
+    }
     
     return formatted;
   };
@@ -25,7 +31,7 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
     // First, extract and replace code blocks with styled blocks
     let codeBlockIndex = 0;
     
-    // Extract code blocks
+    // Extract code blocks with better regex
     content = content.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
       const placeholder = `__CODE_BLOCK_${codeBlockIndex}__`;
       
@@ -41,36 +47,43 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
     });
     
     // Convert inline code
-    content = content.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    content = content.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>');
     
-    // Convert line breaks
+    // Better paragraph and line break handling
+    content = content.replace(/\n\n+/g, '</p><p>');
     content = content.replace(/\n/g, '<br>');
+    
+    // Wrap in paragraphs if needed
+    if (!content.includes('<p>')) {
+      content = '<p>' + content + '</p>';
+    }
+    
+    // Clean up empty paragraphs
+    content = content.replace(/<p><\/p>/g, '');
+    content = content.replace(/<p>\s*<\/p>/g, '');
     
     // Restore code blocks with enhanced action buttons
     codeBlocksRef.current.forEach((block, index) => {
       const placeholder = `__CODE_BLOCK_${index}__`;
       
-      const canCompile = ['c', 'cpp', 'cuda', 'python'].includes(block.language.toLowerCase());
+      const canCompile = ['c', 'cpp', 'cuda', 'python', 'javascript', 'typescript'].includes(block.language.toLowerCase());
       const compileButton = canCompile ? 
         `<button class="compile-code-btn" data-code-index="${block.index}" 
-                style="background: #f97316; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; margin-left: 4px;" 
                 title="Compile and run code">🔨 Compile</button>` : '';
       
       const codeBlockHtml = `
-        <div class="temp-code-block-container" style="margin: 12px 0; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; overflow: hidden;">
-          <div class="temp-code-header" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d;">
-            <span style="color: #1f6feb; font-size: 12px; font-weight: 500;">${block.language.toUpperCase()}</span>
-            <div style="display: flex; gap: 4px; align-items: center;">
+        <div class="temp-code-block-container" data-language="${block.language}">
+          <div class="temp-code-header">
+            <span>${block.language.toUpperCase()}</span>
+            <div>
               <button class="copy-code-btn" data-code-index="${block.index}" 
-                      style="background: none; border: none; color: #7d8590; cursor: pointer; font-size: 12px; padding: 4px;" 
-                      title="Copy code">📋</button>
+                      title="Copy code">📋 Copy</button>
               <button class="edit-code-btn" data-code-index="${block.index}" 
-                      style="background: #238636; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;" 
                       title="Edit in code panel">📝 Edit</button>
               ${compileButton}
             </div>
           </div>
-          <pre style="margin: 0; padding: 16px; overflow-x: auto; background: #0d1117; color: #f0f6fc; font-family: Monaco, monospace; font-size: 14px; line-height: 1.4;"><code>${block.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+          <pre><code>${block.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
         </div>
       `;
       
@@ -95,11 +108,11 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
       if (codeBlock) {
         navigator.clipboard.writeText(codeBlock.code).then(() => {
           const originalText = button.textContent;
-          button.textContent = '✓';
+          button.textContent = '✓ Copied';
           button.style.color = '#22c55e';
           setTimeout(() => {
             button.textContent = originalText;
-            button.style.color = '#7d8590';
+            button.style.color = '';
           }, 2000);
         }).catch(err => {
           console.error('Failed to copy code:', err);
@@ -127,7 +140,7 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
       const codeBlock = codeBlocksRef.current.find(block => block.index === codeIndex);
       
       if (codeBlock && onOpenCodeEditor) {
-        // Open in code editor and trigger compilation
+        // Open in code editor
         onOpenCodeEditor(codeBlock.code, codeBlock.language);
         
         // Show feedback
@@ -150,7 +163,7 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
       }
     };
 
-    // Add event listeners
+    // Add event listeners with delegation
     messageElement.addEventListener('click', handleCopyClick);
     messageElement.addEventListener('click', handleEditClick);
     messageElement.addEventListener('click', handleCompileClick);
@@ -175,7 +188,7 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
       );
     }
 
-    // For assistant messages with code blocks
+    // For assistant messages with enhanced formatting
     const processedContent = extractCodeBlocks(message.content || '');
     
     return (
@@ -189,7 +202,10 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
   };
 
   return (
-    <div ref={messageRef} className={`message ${isUser ? 'user' : 'assistant'} ${splitPaneMode ? 'split-mode' : ''}`}>
+    <div 
+      ref={messageRef} 
+      className={`message ${isUser ? 'user' : 'assistant'} ${splitPaneMode ? 'split-mode' : ''}`}
+    >
       <div className="message-avatar">
         {isUser ? '👤' : '🤖'}
       </div>

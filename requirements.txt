@@ -51,3 +51,18 @@ flake8==6.0.0
 
 # API Documentation
 flask-swagger-ui==4.11.1
+
+
+curl -X POST http://localhost:11434/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5-coder:14b",
+    "prompt": "What is CUDA?",
+    "stream": false,
+    "options": {
+      "num_predict": 500,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "num_ctx": 2048
+    }
+  }'

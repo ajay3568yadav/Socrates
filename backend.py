@@ -46,6 +46,186 @@ except Exception as e:
 
 conversation_sessions = {}
 
+# Course-specific learning progression tracking
+course_sessions = {}
+
+# Course configurations with structured teaching content
+COURSE_CONFIGS = {
+    "CUDA Basics": {
+        "id": "c801ac6c-1232-4c96-89b1-c4eadf41026c",
+        "prerequisites": [
+            "Basic C/C++ programming",
+            "Understanding of arrays and pointers",
+            "Basic computer architecture concepts"
+        ],
+        "topics": [
+            "What is CUDA and GPU Computing",
+            "CUDA Programming Model", 
+            "Thread Hierarchy (Threads, Blocks, Grids)",
+            "Memory Management (cudaMalloc, cudaMemcpy)",
+            "Writing Your First CUDA Kernel",
+            "Host vs Device Code",
+            "CUDA Runtime API Basics"
+        ],
+        "practice_questions": [
+            {
+                "type": "mcq",
+                "question": "What is the main advantage of GPU computing over CPU computing?",
+                "options": [
+                    "Higher clock speeds",
+                    "Better single-thread performance", 
+                    "Massive parallelism with thousands of cores",
+                    "Lower power consumption"
+                ],
+                "correct": 2,
+                "explanation": "GPUs excel at parallel processing with thousands of cores, making them ideal for data-parallel computations."
+            },
+            {
+                "type": "coding",
+                "question": "Write a simple CUDA kernel that adds two arrays element-wise.",
+                "solution": "__global__ void addArrays(float* a, float* b, float* c, int n) {\n    int idx = threadIdx.x + blockIdx.x * blockDim.x;\n    if (idx < n) {\n        c[idx] = a[idx] + b[idx];\n    }\n}"
+            }
+        ]
+    },
+    "Memory Optimization": {
+        "id": "d26ccd91-cdf9-45e3-990f-a484d764bb9d",
+        "prerequisites": [
+            "CUDA Basics completed",
+            "Understanding of CUDA kernels",
+            "Basic memory hierarchy concepts"
+        ],
+        "topics": [
+            "CUDA Memory Hierarchy",
+            "Global Memory Access Patterns",
+            "Shared Memory Usage",
+            "Constant and Texture Memory",
+            "Memory Coalescing",
+            "Bank Conflicts",
+            "Memory Bandwidth Optimization"
+        ],
+        "practice_questions": [
+            {
+                "type": "open",
+                "question": "Explain the difference between global memory and shared memory in CUDA, and when you would use each."
+            },
+            {
+                "type": "mcq", 
+                "question": "What is memory coalescing in CUDA?",
+                "options": [
+                    "Combining multiple memory allocations",
+                    "Accessing consecutive memory locations in a single transaction",
+                    "Compressing data in memory",
+                    "Sharing memory between different blocks"
+                ],
+                "correct": 1,
+                "explanation": "Memory coalescing occurs when threads in a warp access consecutive memory locations, allowing for efficient memory transactions."
+            }
+        ]
+    },
+    "Kernel Development": {
+        "id": "ff7d63fc-8646-4d9a-be5d-41a249beff02", 
+        "prerequisites": [
+            "CUDA Basics completed",
+            "Understanding of thread hierarchy",
+            "Basic algorithm design"
+        ],
+        "topics": [
+            "Advanced Kernel Design Patterns",
+            "Thread Synchronization",
+            "Warp-Level Programming",
+            "Occupancy Optimization",
+            "Kernel Launch Configuration",
+            "Dynamic Parallelism",
+            "Error Handling in Kernels"
+        ],
+        "practice_questions": [
+            {
+                "type": "coding",
+                "question": "Write a CUDA kernel that performs matrix multiplication with proper thread synchronization.",
+                "solution": "__global__ void matrixMul(float* A, float* B, float* C, int N) {\n    int row = blockIdx.y * blockDim.y + threadIdx.y;\n    int col = blockIdx.x * blockDim.x + threadIdx.x;\n    \n    if (row < N && col < N) {\n        float sum = 0.0f;\n        for (int k = 0; k < N; k++) {\n            sum += A[row * N + k] * B[k * N + col];\n        }\n        C[row * N + col] = sum;\n    }\n}"
+            }
+        ]
+    },
+    "Performance Tuning": {
+        "id": "22107ce-5027-42bf-9941-6d00117da9ae",
+        "prerequisites": [
+            "CUDA Basics completed", 
+            "Memory Optimization completed",
+            "Understanding of GPU architecture"
+        ],
+        "topics": [
+            "Performance Profiling with NVIDIA Tools",
+            "Occupancy Analysis",
+            "Memory Throughput Optimization", 
+            "Instruction Throughput",
+            "Multi-GPU Programming",
+            "CUDA Streams and Concurrency",
+            "Advanced Optimization Techniques"
+        ],
+        "practice_questions": [
+            {
+                "type": "open",
+                "question": "You have a CUDA kernel with low occupancy (20%). What are three potential causes and how would you fix them?"
+            },
+            {
+                "type": "mcq",
+                "question": "What is the primary benefit of using CUDA streams?",
+                "options": [
+                    "Faster kernel execution",
+                    "Overlapping computation and memory transfers", 
+                    "Better memory coalescing",
+                    "Reduced register usage"
+                ],
+                "correct": 1,
+                "explanation": "CUDA streams allow overlapping of kernel execution with memory transfers, improving overall performance."
+            }
+        ]
+    }
+}
+
+class CourseProgressTracker:
+    """Tracks learning progression for each course"""
+    
+    def __init__(self):
+        self.session_progress = {}
+    
+    def get_session_progress(self, session_id, course_name):
+        """Get or initialize progress for a session/course combination"""
+        key = f"{session_id}_{course_name}"
+        if key not in self.session_progress:
+            self.session_progress[key] = {
+                "phase": "prerequisites",  # prerequisites -> teaching -> practice -> completed
+                "prerequisites_checked": False,
+                "topics_covered": [],
+                "current_topic_index": 0,
+                "practice_started": False,
+                "questions_answered": [],
+                "course_completed": False,
+                "student_ready": False
+            }
+        return self.session_progress[key]
+    
+    def update_progress(self, session_id, course_name, updates):
+        """Update progress for a session/course"""
+        progress = self.get_session_progress(session_id, course_name)
+        progress.update(updates)
+        return progress
+    
+    def is_topic_mastered(self, session_id, course_name, topic_index):
+        """Check if student has mastered a topic (simple heuristic)"""
+        progress = self.get_session_progress(session_id, course_name)
+        return topic_index in progress.get("topics_covered", [])
+    
+    def mark_topic_completed(self, session_id, course_name, topic_index):
+        """Mark a topic as completed"""
+        progress = self.get_session_progress(session_id, course_name)
+        if topic_index not in progress["topics_covered"]:
+            progress["topics_covered"].append(topic_index)
+        return progress
+
+# Initialize course progress tracker
+course_tracker = CourseProgressTracker()
+
 # Configuration for code compilation
 COMPILATION_TIMEOUT = 30  # seconds
 EXECUTION_TIMEOUT = 10    # seconds
@@ -717,6 +897,314 @@ class SimpleRAG:
         results = [self.knowledge[i] for i in top_indices]
         return results
     
+    def generate_course_specific_response(self, query, course_name, session_id, conversation_context="", stream=False):
+        """Generate course-specific response with structured teaching progression"""
+        
+        if course_name not in COURSE_CONFIGS:
+            return self.generate_response(query, conversation_context, stream)
+        
+        course_config = COURSE_CONFIGS[course_name]
+        progress = course_tracker.get_session_progress(session_id, course_name)
+        
+        # Handle special commands
+        if query.strip().lower() == "start module":
+            return self._start_module_teaching(course_name, session_id, course_config, progress)
+        
+        # Phase-specific response generation
+        if progress["phase"] == "prerequisites":
+            return self._handle_prerequisites_phase(query, course_name, session_id, course_config, progress, conversation_context, stream)
+        elif progress["phase"] == "teaching":
+            return self._handle_teaching_phase(query, course_name, session_id, course_config, progress, conversation_context, stream)
+        elif progress["phase"] == "practice":
+            return self._handle_practice_phase(query, course_name, session_id, course_config, progress, conversation_context, stream)
+        elif progress["phase"] == "completed":
+            return self._handle_completed_phase(query, course_name, session_id, course_config, progress, conversation_context, stream)
+        else:
+            # Fallback to general response
+            return self.generate_response(query, conversation_context, stream)
+    
+    def _start_module_teaching(self, course_name, session_id, course_config, progress):
+        """Start the structured teaching process"""
+        course_tracker.update_progress(session_id, course_name, {
+            "phase": "prerequisites",
+            "prerequisites_checked": False
+        })
+        
+        prereq_list = "\n".join([f"• {prereq}" for prereq in course_config["prerequisites"]])
+        
+        return f"""🎓 **Welcome to {course_name}!**
+
+I'm excited to guide you through this course! Before we dive into the main content, let me check if you're familiar with the prerequisites:
+
+**Prerequisites for {course_name}:**
+{prereq_list}
+
+Please let me know:
+1. Are you comfortable with these concepts?
+2. Which of these would you like me to review or explain further?
+
+If you're ready to move forward, just say "I'm ready" or "let's continue". If you need help with any prerequisite, feel free to ask specific questions!
+
+Let's make this learning journey effective and tailored to your needs! 🚀"""
+    
+    def _handle_prerequisites_phase(self, query, course_name, session_id, course_config, progress, conversation_context, stream):
+        """Handle the prerequisites checking phase"""
+        query_lower = query.lower().strip()
+        
+        # Check if student is ready to proceed
+        if any(phrase in query_lower for phrase in ["i'm ready", "let's continue", "ready to proceed", "move forward", "skip prerequisites"]):
+            course_tracker.update_progress(session_id, course_name, {
+                "phase": "teaching",
+                "prerequisites_checked": True,
+                "student_ready": True
+            })
+            
+            first_topic = course_config["topics"][0]
+            return f"""Excellent! Let's begin with the first topic.
+
+📚 **Topic 1: {first_topic}**
+
+{self._generate_topic_content(course_name, 0, first_topic)}
+
+Take your time to understand this concept. When you're ready, let me know if you have any questions or if you'd like to move to the next topic. You can ask:
+• "I have a question about [topic]"
+• "Can you explain [concept] more?"
+• "I understand, let's move on"
+• "Give me an example"
+
+What would you like to explore about {first_topic}?"""
+        
+        # Handle prerequisite-related questions
+        elif any(phrase in query_lower for phrase in ["explain", "what is", "help with", "don't understand"]):
+            # Generate explanation for prerequisites
+            prompt = f"""You are a patient CUDA tutor helping a student understand prerequisites for {course_name}.
+
+Prerequisites needed: {', '.join(course_config['prerequisites'])}
+
+Student question: {query}
+
+Provide a clear, beginner-friendly explanation. Be encouraging and supportive. After your explanation, ask if they're ready to continue or need more clarification."""
+            
+            return self._call_llm(prompt, conversation_context, stream)
+        
+        else:
+            # General prerequisite guidance
+            return self._call_llm(f"""You are a CUDA tutor checking prerequisites for {course_name}. 
+
+Prerequisites: {', '.join(course_config['prerequisites'])}
+
+Student message: {query}
+
+Respond helpfully and determine if they seem ready to proceed. If they seem ready, encourage them to say "I'm ready" to start the main course content.""", conversation_context, stream)
+    
+    def _handle_teaching_phase(self, query, course_name, session_id, course_config, progress, conversation_context, stream):
+        """Handle the main teaching phase"""
+        current_topic_idx = progress["current_topic_index"]
+        topics = course_config["topics"]
+        
+        if current_topic_idx >= len(topics):
+            # Move to practice phase
+            course_tracker.update_progress(session_id, course_name, {
+                "phase": "practice",
+                "practice_started": True
+            })
+            return self._start_practice_phase(course_name, course_config)
+        
+        current_topic = topics[current_topic_idx]
+        query_lower = query.lower().strip()
+        
+        # Check if student wants to move on
+        if any(phrase in query_lower for phrase in ["next topic", "move on", "i understand", "got it", "continue"]):
+            course_tracker.mark_topic_completed(session_id, course_name, current_topic_idx)
+            
+            next_idx = current_topic_idx + 1
+            course_tracker.update_progress(session_id, course_name, {"current_topic_index": next_idx})
+            
+            if next_idx < len(topics):
+                next_topic = topics[next_idx]
+                return f"""Great job mastering **{current_topic}**! ✅
+
+📚 **Topic {next_idx + 1}: {next_topic}**
+
+{self._generate_topic_content(course_name, next_idx, next_topic)}
+
+What questions do you have about {next_topic}?"""
+            else:
+                # All topics covered, move to practice
+                course_tracker.update_progress(session_id, course_name, {
+                    "phase": "practice",
+                    "practice_started": True
+                })
+                return self._start_practice_phase(course_name, course_config)
+        
+        # Handle topic-specific questions
+        else:
+            prompt = f"""You are an expert CUDA tutor teaching {course_name}.
+
+Current topic: {current_topic}
+Course topics covered so far: {', '.join(topics[:current_topic_idx+1])}
+
+Student question: {query}
+
+Provide a detailed, educational response focused on {current_topic}. Use examples and be patient. Encourage questions and make sure the student understands before moving on."""
+            
+            return self._call_llm(prompt, conversation_context, stream)
+    
+    def _handle_practice_phase(self, query, course_name, session_id, course_config, progress, conversation_context, stream):
+        """Handle the practice questions phase"""
+        questions = course_config.get("practice_questions", [])
+        answered = progress.get("questions_answered", [])
+        
+        if len(answered) >= len(questions):
+            # All questions answered, complete the course
+            course_tracker.update_progress(session_id, course_name, {
+                "phase": "completed",
+                "course_completed": True
+            })
+            return self._complete_course(course_name)
+        
+        # Present next practice question
+        next_q_idx = len(answered)
+        question = questions[next_q_idx]
+        
+        if question["type"] == "mcq":
+            options_text = "\n".join([f"{chr(65+i)}. {opt}" for i, opt in enumerate(question["options"])])
+            return f"""📝 **Practice Question {next_q_idx + 1}**
+
+{question["question"]}
+
+{options_text}
+
+Please provide your answer (A, B, C, or D) and explain your reasoning."""
+        
+        elif question["type"] == "coding":
+            return f"""💻 **Coding Challenge {next_q_idx + 1}**
+
+{question["question"]}
+
+Please write your code solution and explain your approach."""
+        
+        else:  # open-ended
+            return f"""🤔 **Discussion Question {next_q_idx + 1}**
+
+{question["question"]}
+
+Please provide a detailed explanation."""
+    
+    def _handle_completed_phase(self, query, course_name, session_id, course_config, progress, conversation_context, stream):
+        """Handle interactions after course completion"""
+        return f"""🎉 Congratulations! You've successfully completed **{course_name}**!
+
+You can still ask me questions about any {course_name} topics, or you might want to:
+• Start another course module
+• Practice more advanced problems
+• Get help with specific CUDA coding challenges
+
+What would you like to explore next?
+
+Your question: {query}"""
+    
+    def _generate_topic_content(self, course_name, topic_index, topic_name):
+        """Generate educational content for a specific topic"""
+        # This would ideally use the RAG system with course-specific examples
+        topic_explanations = {
+            "What is CUDA and GPU Computing": "CUDA (Compute Unified Device Architecture) is NVIDIA's parallel computing platform that allows you to harness the massive parallel processing power of GPUs for general-purpose computing tasks...",
+            "CUDA Programming Model": "The CUDA programming model is based on the concept of kernels - functions that execute on the GPU in parallel across many threads...",
+            "Thread Hierarchy (Threads, Blocks, Grids)": "CUDA organizes threads in a three-level hierarchy: individual threads are grouped into blocks, and blocks are organized into grids...",
+            # Add more topic explanations as needed
+        }
+        
+        return topic_explanations.get(topic_name, f"Let me explain {topic_name} in detail. This is a fundamental concept in {course_name}...")
+    
+    def _start_practice_phase(self, course_name, course_config):
+        """Start the practice questions phase"""
+        return f"""🎯 **Excellent work!** You've completed all the main topics for **{course_name}**.
+
+Now it's time to test your understanding with some practice questions. These will include:
+• Multiple choice questions
+• Coding challenges  
+• Open-ended discussions
+
+Ready for your first practice question? Just say "yes" or "I'm ready for questions"!"""
+    
+    def _complete_course(self, course_name):
+        """Complete the course"""
+        return f"""🎉🎊 **CONGRATULATIONS!** 🎊🎉
+
+You have successfully completed **{course_name}**! 
+
+**What you've accomplished:**
+✅ Mastered all prerequisite concepts
+✅ Learned all core topics
+✅ Completed practice questions
+✅ Demonstrated understanding through exercises
+
+You're now ready to apply these {course_name} concepts in real projects! 
+
+**Next steps you might consider:**
+• Explore another course module
+• Work on a hands-on CUDA project
+• Ask me about advanced topics
+• Practice with more coding challenges
+
+What would you like to explore next in your CUDA learning journey?"""
+    
+    def _call_llm(self, prompt, conversation_context="", stream=False):
+        """Helper method to call the LLM with proper context"""
+        if conversation_context:
+            full_prompt = f"""Previous conversation context:
+{conversation_context}
+
+{prompt}"""
+        else:
+            full_prompt = prompt
+        
+        return self._generate_llm_response(full_prompt, stream)
+    
+    def _generate_llm_response(self, prompt, stream=False):
+        """Generate response using the LLM"""
+        try:
+            response = requests.post("http://localhost:11434/api/generate", 
+                json={
+                    "model": "deepseek-r1:latest",
+                    "prompt": prompt,
+                    "stream": stream,
+                    "options": {
+                        "num_predict": 3000,
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "stop": ["Student question:", "Question:", "Human:", "User:"],
+                        "num_ctx": 4096,
+                        "repeat_penalty": 1.1
+                    }
+                }, 
+                timeout=120,
+                stream=stream
+            )
+            
+            if response.status_code == 200:
+                if stream:
+                    full_response = ""
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                chunk = json.loads(line.decode('utf-8'))
+                                if 'response' in chunk:
+                                    full_response += chunk['response']
+                                if chunk.get('done', False):
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+                    return full_response
+                else:
+                    result = response.json()
+                    return result.get("response", "").strip()
+            else:
+                return f"I'm having trouble connecting to the AI model. Status: {response.status_code}"
+                
+        except Exception as e:
+            return f"An error occurred: {str(e)}"
+
     def generate_response(self, query, conversation_context="", stream=False):
         """Generate response using RAG with conversation context"""
         
@@ -1068,10 +1556,27 @@ def chat():
         # Check if this is a follow-up question
         is_follow_up = detect_follow_up_question(message)
         
-        # Generate response with context
+        # Extract module/course information
+        module_id = data.get('module_id')
+        course_name = None
+        
+        # Map module_id to course name
+        if module_id:
+            for name, config in COURSE_CONFIGS.items():
+                if config["id"] == module_id:
+                    course_name = name
+                    break
+        
+        # Generate response with course-specific context
         if rag_system:
-            # Always use conversation context if available
-            response = rag_system.generate_response(message, conversation_context, stream=stream)
+            if course_name:
+                # Use course-specific response generation
+                response = rag_system.generate_course_specific_response(
+                    message, course_name, session_id, conversation_context, stream=stream
+                )
+            else:
+                # Use general response generation
+                response = rag_system.generate_response(message, conversation_context, stream=stream)
         else:
             # Fallback response
             response = """I apologize, but the RAG system isn't fully initialized. Here's a basic response:
@@ -1338,16 +1843,110 @@ def session_info(session_id):
         print(f"Error getting session info: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/course-info/<course_name>')
+def get_course_info(course_name):
+    """Get course information and structure"""
+    try:
+        if course_name not in COURSE_CONFIGS:
+            return jsonify({'error': 'Course not found'}), 404
+        
+        course_config = COURSE_CONFIGS[course_name]
+        return jsonify({
+            'course_name': course_name,
+            'course_id': course_config['id'],
+            'prerequisites': course_config['prerequisites'],
+            'topics': course_config['topics'],
+            'total_topics': len(course_config['topics']),
+            'practice_questions_count': len(course_config.get('practice_questions', []))
+        })
+    except Exception as e:
+        print(f"Error getting course info: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/course-progress/<session_id>/<course_name>')
+def get_course_progress(session_id, course_name):
+    """Get learning progress for a specific course and session"""
+    try:
+        if course_name not in COURSE_CONFIGS:
+            return jsonify({'error': 'Course not found'}), 404
+        
+        progress = course_tracker.get_session_progress(session_id, course_name)
+        course_config = COURSE_CONFIGS[course_name]
+        
+        return jsonify({
+            'course_name': course_name,
+            'session_id': session_id,
+            'progress': progress,
+            'total_topics': len(course_config['topics']),
+            'topics_completed': len(progress.get('topics_covered', [])),
+            'completion_percentage': (len(progress.get('topics_covered', [])) / len(course_config['topics'])) * 100 if course_config['topics'] else 0
+        })
+    except Exception as e:
+        print(f"Error getting course progress: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/start-module', methods=['POST', 'OPTIONS'])
+def start_module():
+    """Start a course module with structured teaching"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        data = request.get_json()
+        course_name = data.get('course_name')
+        session_id = data.get('session_id')
+        
+        if not course_name or not session_id:
+            return jsonify({'error': 'Course name and session ID required'}), 400
+        
+        if course_name not in COURSE_CONFIGS:
+            return jsonify({'error': 'Course not found'}), 404
+        
+        # Reset progress for this course
+        course_tracker.update_progress(session_id, course_name, {
+            "phase": "prerequisites",
+            "prerequisites_checked": False,
+            "topics_covered": [],
+            "current_topic_index": 0,
+            "practice_started": False,
+            "questions_answered": [],
+            "course_completed": False,
+            "student_ready": False
+        })
+        
+        if rag_system:
+            response = rag_system.generate_course_specific_response(
+                "start module", course_name, session_id, "", stream=False
+            )
+        else:
+            response = f"Welcome to {course_name}! The structured teaching system is not fully available."
+        
+        return jsonify({
+            'success': True,
+            'response': response,
+            'course_name': course_name,
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        print(f"Error starting module: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/health')
 def health():
     """Simple health check"""
     try:
         return jsonify({
             'status': 'healthy', 
-            'service': 'CUDA Chat Backend with Context + Code Compilation',
+            'service': 'CUDA Chat Backend with Context + Code Compilation + Course Teaching',
             'active_sessions': len(conversation_sessions),
             'rag_status': 'loaded' if rag_system else 'not_loaded',
-            'compiler_status': 'enhanced' if (compiler and hasattr(compiler, 'dep_manager')) else ('basic' if compiler else 'not_loaded')
+            'compiler_status': 'enhanced' if (compiler and hasattr(compiler, 'dep_manager')) else ('basic' if compiler else 'not_loaded'),
+            'course_system': 'enabled',
+            'available_courses': list(COURSE_CONFIGS.keys())
         })
     except Exception as e:
         print(f"Error in health route: {e}")

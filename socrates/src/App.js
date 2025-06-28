@@ -589,6 +589,28 @@ const CudaTutorApp = () => {
     createNewChat();
   };
 
+  // Handle start module action
+  const handleStartModule = (courseName, initialMessage) => {
+    console.log("Starting module:", courseName);
+
+    // Create new chat for the course
+    createNewChat().then(() => {
+      // Send the initial course message
+      if (initialMessage) {
+        // Add the course welcome message as an assistant message
+        const welcomeMessage = {
+          id: Date.now() + "_course_welcome",
+          role: "assistant",
+          content: initialMessage,
+          timestamp: new Date().toISOString(),
+        };
+
+        setMessages([welcomeMessage]);
+        setCurrentView("chat");
+      }
+    });
+  };
+
   useEffect(() => {
     if (user && selectedModuleId) {
       console.log(
@@ -607,48 +629,51 @@ const CudaTutorApp = () => {
     let orderIndex = messages.length;
 
     // ========== SPECIAL HANDLING FOR QUIZ FEEDBACK ==========
-    if (message.startsWith('QUIZ_FEEDBACK:')) {
+    if (message.startsWith("QUIZ_FEEDBACK:")) {
       console.log("Processing quiz feedback message");
-      const evaluationJson = message.replace('QUIZ_FEEDBACK:', '');
-      
+      const evaluationJson = message.replace("QUIZ_FEEDBACK:", "");
+
       try {
         const evaluation = JSON.parse(evaluationJson);
         console.log("Parsed quiz evaluation:", evaluation);
-        
+
         // Create feedback message with quizEvaluation property
         const feedbackMessage = {
-          id: Date.now() + '_quiz_feedback',
-          role: 'assistant',
-          content: '', // Empty content since we're using quizEvaluation
+          id: Date.now() + "_quiz_feedback",
+          role: "assistant",
+          content: "", // Empty content since we're using quizEvaluation
           quizEvaluation: evaluation, // This will trigger QuizFeedback component
           timestamp: new Date().toISOString(),
         };
-        
+
         // Add feedback message to chat
-        setMessages(prev => [...prev, feedbackMessage]);
+        setMessages((prev) => [...prev, feedbackMessage]);
         setIsLoading(false);
-        
+
         // Save to database with a summary
         if (chatId) {
           await saveMessage(
             chatId,
-            'assistant',
-            `Quiz Results: ${evaluation.score}/${evaluation.total} (${evaluation.percentage.toFixed(0)}%) - ${evaluation.overall_message}`,
+            "assistant",
+            `Quiz Results: ${evaluation.score}/${
+              evaluation.total
+            } (${evaluation.percentage.toFixed(0)}%) - ${
+              evaluation.overall_message
+            }`,
             orderIndex
           );
         }
-        
+
         console.log("Quiz feedback message added successfully");
         return; // Exit early for quiz feedback
-        
       } catch (error) {
-        console.error('Error parsing quiz feedback:', error);
+        console.error("Error parsing quiz feedback:", error);
         // If parsing fails, treat as regular message
       }
     }
 
     // ========== REGULAR MESSAGE HANDLING ==========
-    
+
     // Create new chat if needed
     if (!chatId) {
       console.log("No current chat, creating new chat...");
@@ -733,7 +758,6 @@ const CudaTutorApp = () => {
       if (savedAssistantMessage) {
         console.log("Assistant message saved to database");
       }
-      
     } catch (error) {
       console.error("Error sending message:", error);
 
@@ -819,6 +843,8 @@ const CudaTutorApp = () => {
           onRefreshBackend={checkBackendStatus}
           onSelectModule={handleSelectModule}
           selectedModuleId={selectedModuleId}
+          onStartModule={handleStartModule}
+          sessionId={sessionId}
           isMobile={isMobile}
         />
       </div>

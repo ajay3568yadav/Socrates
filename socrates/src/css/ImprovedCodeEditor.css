@@ -159,6 +159,7 @@
   color: #111;
 }
 
+.action-btn.compile-btn:hover,
 .action-btn.run-btn:hover {
   background: #689c00;
   box-shadow: 0 2px 8px rgba(118, 185, 0, 0.3);
@@ -208,6 +209,7 @@
   display: flex;
   overflow: hidden;
   min-height: 200px;
+  position: relative;
 }
 
 .editor-content.with-results .code-section {
@@ -684,6 +686,12 @@
     font-size: 10px;
   }
   
+  .line-numbers {
+    padding: 12px 6px 12px 12px;
+    width: 40px;
+    font-size: 12px;
+  }
+
   .code-textarea {
     padding: 12px;
     font-size: 13px;

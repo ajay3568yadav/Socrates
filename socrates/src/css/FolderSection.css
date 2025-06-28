@@ -32,8 +32,8 @@
 }
 
 .section-action:hover {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.1);
+  color: #76b900;
+  background: rgba(118, 185, 0, 0.1);
 }
 
 /* Enhanced folder item for better module selection feedback */
@@ -55,17 +55,17 @@
 
 .folder-item.active {
   background: #2a4d3a;
-  border-color: #22c55e;
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2);
+  border-color: #76b900;
+  box-shadow: 0 0 0 1px rgba(118, 185, 0, 0.2);
 }
 
 .folder-item.active .folder-name {
-  color: #22c55e;
+  color: #76b900;
   font-weight: 600;
 }
 
 .folder-item.active .folder-icon {
-  color: #22c55e;
+  color: #76b900;
 }
 
 .folder-icon {
@@ -110,8 +110,8 @@
 }
 
 .status-badge.completed {
- background: rgba(34, 197, 94, 0.1);
- color: #22c55e;
+ background: rgba(118, 185, 0, 0.1);
+ color: #76b900;
 }
 
 .status-badge.in-progress {
@@ -128,15 +128,15 @@
 .modules-summary {
  margin-top: 12px;
  padding: 10px 16px;
- background: rgba(34, 197, 94, 0.05);
+ background: rgba(118, 185, 0, 0.05);
  border-radius: 8px;
- border: 1px solid rgba(34, 197, 94, 0.1);
+ border: 1px solid rgba(118, 185, 0, 0.1);
  margin-bottom: 16px;
 }
 
 .summary-text {
  font-size: 11px;
- color: #22c55e;
+ color: #76b900;
  text-align: center;
  font-weight: 500;
 }

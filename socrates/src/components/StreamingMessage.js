@@ -76,10 +76,10 @@ const StreamingMessage = ({ message, onComplete, onSendMessage, isLoading, onOpe
             <div style="display: flex; gap: 8px;">
               <button class="copy-code-btn" data-code-index="${block.index}" 
                       style="background: none; border: none; color: #7d8590; cursor: pointer; font-size: 12px; padding: 4px;" 
-                      title="Copy code">📋</button>
+                      title="Copy code">Copy</button>
               ${!isTyping ? `<button class="edit-code-btn" data-code-index="${block.index}" 
                       style="background: #238636; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;" 
-                      title="Edit in code panel">📝 Edit</button>` : ''}
+                      title="Edit in code panel">Edit</button>` : ''}
             </div>
           </div>
           <pre style="margin: 0; padding: 16px; overflow-x: auto; background: #0d1117; color: #f0f6fc; font-family: Monaco, monospace; font-size: 14px; line-height: 1.4;"><code>${block.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>

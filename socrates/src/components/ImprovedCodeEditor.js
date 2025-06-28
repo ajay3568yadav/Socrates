@@ -584,9 +584,9 @@ const ImprovedCodeEditor = ({
             title="Ask AI to review this code"
           >
             {isLoading ? (
-              <>⏳ Reviewing...</>
+              <>Reviewing…</>
             ) : (
-              <>🔍 Ask AI to Review</>
+              <>Ask AI to Review</>
             )}
           </button>
         </div>

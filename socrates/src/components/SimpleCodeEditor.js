@@ -79,7 +79,7 @@ const SimpleCodeEditor = ({
             onClick={handleCopyCode}
             title="Copy Code"
           >
-            📋
+            Copy
           </button>
           
           <button
@@ -88,7 +88,7 @@ const SimpleCodeEditor = ({
             disabled={!code.trim() || isLoading}
             title="Send code for AI review"
           >
-            {isLoading ? '⏳' : '🔍'} Review
+            {isLoading ? 'Reviewing…' : 'Review'}
           </button>
         </div>
       </div>

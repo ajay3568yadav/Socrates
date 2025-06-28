@@ -7,6 +7,7 @@ import time
 import traceback
 from flask import Blueprint, request, jsonify
 from models.session import SessionManager
+from utils.gpu_monitor import get_performance_tracker
 
 def create_chat_blueprint(rag_system):
     """Create chat blueprint with RAG system dependency"""
@@ -35,6 +36,9 @@ def create_chat_blueprint(rag_system):
             
             print(f"💬 Session {session_id}: {message}")
             
+            # Start performance tracking
+            start_time = time.time()
+            
             # Get conversation context
             conversation_context = session_manager.get_conversation_context(session_id)
             is_follow_up = session_manager.detect_follow_up_question(message)
@@ -45,17 +49,40 @@ def create_chat_blueprint(rag_system):
             else:
                 response = _get_fallback_response()
             
+            # End performance tracking
+            end_time = time.time()
+            
+            # Track GPU usage and system performance
+            performance_tracker = get_performance_tracker()
+            performance_data = performance_tracker.track_prompt_performance(
+                start_time=start_time,
+                end_time=end_time,
+                session_id=session_id,
+                prompt_length=len(message),
+                response_length=len(response)
+            )
+            
             # Save to session history
             session_manager.add_exchange(session_id, message, response, is_follow_up)
             
             print(f"✅ Session {session_id}: Generated response ({len(response)} chars)")
             print(f"🔗 Follow-up detected: {is_follow_up}")
             
+            # Print enhanced system usage with GPU stats
+            performance_tracker.print_enhanced_system_usage(performance_data)
+            
             return jsonify({
                 'response': response,
                 'session_id': session_id,
                 'is_follow_up': is_follow_up,
                 'context_used': bool(conversation_context),
+                'performance_metrics': {
+                    'response_time_seconds': performance_data['response_time_seconds'],
+                    'prompt_length': performance_data['prompt_length'],
+                    'response_length': performance_data['response_length'],
+                    'system_metrics': performance_data['system_metrics'],
+                    'gpu_metrics': performance_data['gpu_metrics']
+                },
                 'status': 'success'
             })
             

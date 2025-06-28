@@ -6,8 +6,10 @@ Status and health monitoring routes
 import subprocess
 import requests
 import traceback
+import time
 from flask import Blueprint, jsonify
 from config import get_config
+from utils.gpu_monitor import get_performance_tracker
 
 config = get_config()
 
@@ -62,6 +64,35 @@ def create_status_blueprint(app_systems):
                         compiler_status[lang] = 'interpreter'
                 
                 status_info['compilers'] = compiler_status
+            
+            # Add GPU monitoring information
+            try:
+                performance_tracker = get_performance_tracker()
+                gpu_info = performance_tracker.gpu_monitor.get_gpu_info()
+                system_metrics = performance_tracker.system_monitor.get_system_metrics()
+                
+                status_info['gpu_monitoring'] = {
+                    'cuda_available': gpu_info['cuda_available'],
+                    'gpu_count': gpu_info['gpu_count'],
+                    'gpu_model': gpu_info['gpu_model'],
+                    'monitoring_method': gpu_info['monitoring_method'],
+                    'gpu_memory_used_gb': gpu_info['gpu_memory_used_gb'],
+                    'gpu_memory_total_gb': gpu_info['gpu_memory_total_gb'],
+                    'gpu_memory_percent': gpu_info['gpu_memory_percent'],
+                    'gpu_utilization_percent': gpu_info['gpu_utilization_percent']
+                }
+                
+                status_info['system_monitoring'] = {
+                    'memory_gb': system_metrics['memory_gb'],
+                    'memory_percent': system_metrics['memory_percent'],
+                    'cpu_percent': system_metrics['cpu_percent'],
+                    'average_memory_percent': performance_tracker.system_monitor.get_average_memory_usage(),
+                    'average_cpu_percent': performance_tracker.system_monitor.get_average_cpu_usage()
+                }
+            except Exception as e:
+                print(f"⚠️ Error getting GPU/system monitoring info: {e}")
+                status_info['gpu_monitoring'] = {'error': str(e)}
+                status_info['system_monitoring'] = {'error': str(e)}
             
             # Add configuration info
             status_info['configuration'] = {
@@ -194,6 +225,51 @@ def create_status_blueprint(app_systems):
             
         except Exception as e:
             print(f"❌ Error getting compilation stats: {e}")
+            return jsonify({'error': str(e)}), 500
+    
+    @bp.route('/gpu-debug')
+    def gpu_debug():
+        """Detailed GPU debugging information"""
+        try:
+            performance_tracker = get_performance_tracker()
+            debug_info = performance_tracker.gpu_monitor.get_detailed_gpu_debug()
+            
+            return jsonify(debug_info)
+            
+        except Exception as e:
+            print(f"❌ Error getting GPU debug info: {e}")
+            return jsonify({'error': str(e)}), 500
+    
+    @bp.route('/performance-metrics')
+    def performance_metrics():
+        """Get current performance metrics without processing a prompt"""
+        try:
+            performance_tracker = get_performance_tracker()
+            
+            # Get current metrics
+            system_metrics = performance_tracker.system_monitor.get_system_metrics()
+            gpu_info = performance_tracker.gpu_monitor.get_gpu_info()
+            
+            # Get averages
+            avg_cpu = performance_tracker.system_monitor.get_average_cpu_usage()
+            avg_memory = performance_tracker.system_monitor.get_average_memory_usage()
+            
+            metrics = {
+                'timestamp': time.time(),
+                'system_metrics': {
+                    'current_memory_gb': system_metrics['memory_gb'],
+                    'current_memory_percent': system_metrics['memory_percent'],
+                    'average_memory_percent': avg_memory,
+                    'current_cpu_percent': system_metrics['cpu_percent'],
+                    'average_cpu_percent': avg_cpu
+                },
+                'gpu_metrics': gpu_info
+            }
+            
+            return jsonify(metrics)
+            
+        except Exception as e:
+            print(f"❌ Error getting performance metrics: {e}")
             return jsonify({'error': str(e)}), 500
     
     return bp

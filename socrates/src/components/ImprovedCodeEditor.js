@@ -274,7 +274,7 @@ const ImprovedCodeEditor = ({
             disabled={isGeneratingTest || !code.trim()}
             title="Generate test script"
           >
-            {isGeneratingTest ? '⏳' : '🧪'} Test
+            {isGeneratingTest ? 'Generating…' : 'Generate Test'}
           </button>
 
           <button
@@ -283,7 +283,7 @@ const ImprovedCodeEditor = ({
             disabled={isCompiling || !code.trim()}
             title="Compile code"
           >
-            {isCompiling ? '⏳' : '🔨'} Compile
+            {isCompiling ? 'Compiling…' : 'Compile'}
           </button>
 
           <button
@@ -292,7 +292,7 @@ const ImprovedCodeEditor = ({
             disabled={isRunning || !code.trim()}
             title="Run code"
           >
-            {isRunning ? '⏳' : '▶️'} Run
+            {isRunning ? 'Running…' : 'Run'}
           </button>
           
           <button
@@ -308,7 +308,7 @@ const ImprovedCodeEditor = ({
             onClick={handleCopyCode}
             title="Copy code"
           >
-            📋
+            Copy
           </button>
           
           {showCloseButton && (
@@ -454,9 +454,9 @@ const ImprovedCodeEditor = ({
             title="Ask AI to review this code"
           >
             {isLoading ? (
-              <>⏳ Reviewing...</>
+              <>Reviewing…</>
             ) : (
-              <>🔍 Ask AI to Review</>
+              <>Ask AI to Review</>
             )}
           </button>
         </div>

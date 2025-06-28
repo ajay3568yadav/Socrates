@@ -19,6 +19,7 @@ from flask_cors import CORS
 
 from config import get_config
 from utils.cleanup import start_cleanup_service
+from utils.gpu_monitor import initialize_gpu_monitoring
 from models.rag import initialize_rag_system
 from compiler.enhanced import EnhancedCodeCompiler
 from compiler.base import CodeCompiler
@@ -49,6 +50,18 @@ except Exception as e:
 def initialize_systems():
     """Initialize all backend systems"""
     systems = {}
+    
+    # Initialize GPU monitoring system
+    try:
+        gpu_monitoring_success = initialize_gpu_monitoring()
+        systems['gpu_monitoring'] = gpu_monitoring_success
+        if gpu_monitoring_success:
+            print("✅ GPU monitoring system initialized successfully")
+        else:
+            print("⚠️ GPU monitoring system initialized with limitations")
+    except Exception as e:
+        print(f"❌ GPU monitoring system initialization failed: {e}")
+        systems['gpu_monitoring'] = False
     
     # Initialize RAG system
     try:
@@ -118,10 +131,11 @@ def index():
             'message': 'CUDA Tutor Backend is running!',
             'status': 'healthy',
             'version': '2.0.0-modular',
-            'systems': {
+                            'systems': {
                 'rag': 'loaded' if app_systems['rag'] else 'failed',
                 'compiler': 'enhanced' if (app_systems['compiler'] and hasattr(app_systems['compiler'], 'dep_manager')) 
-                           else ('basic' if app_systems['compiler'] else 'failed')
+                           else ('basic' if app_systems['compiler'] else 'failed'),
+                'gpu_monitoring': 'enabled' if app_systems.get('gpu_monitoring') else 'limited'
             },
             'endpoints': {
                 'chat': '/api/chat',
@@ -130,7 +144,9 @@ def index():
                 'compile': '/api/compile',
                 'execute': '/api/execute',
                 'analyze_dependencies': '/api/analyze-dependencies',
-                'install_dependency': '/api/install-dependency'
+                'install_dependency': '/api/install-dependency',
+                'gpu_debug': '/api/gpu-debug',
+                'performance_metrics': '/api/performance-metrics'
             }
         }
     except Exception as e:
@@ -149,7 +165,8 @@ def health():
             'systems': {
                 'rag': app_systems['rag'] is not None,
                 'compiler': app_systems['compiler'] is not None,
-                'enhanced_compiler': app_systems['compiler'] and hasattr(app_systems['compiler'], 'dep_manager')
+                'enhanced_compiler': app_systems['compiler'] and hasattr(app_systems['compiler'], 'dep_manager'),
+                'gpu_monitoring': app_systems.get('gpu_monitoring', False)
             }
         }
     except Exception as e:
@@ -224,10 +241,16 @@ def print_startup_info():
     print(f"   • http://localhost:{config.PORT}/api/analyze-dependencies - Analyze code dependencies")
     print(f"   • http://localhost:{config.PORT}/api/install-dependency   - Install missing packages")
     print()
+    print(" 🎮 GPU Monitoring & Performance:")
+    print(f"   • http://localhost:{config.PORT}/api/gpu-debug           - Detailed GPU debugging")
+    print(f"   • http://localhost:{config.PORT}/api/performance-metrics - Real-time performance metrics")
+    print()
     print(" 🎯 System Status:")
     print(f"   ✅ RAG System: {'Loaded' if app_systems['rag'] else 'Failed'}")
     enhanced_status = 'Enhanced' if (app_systems['compiler'] and hasattr(app_systems['compiler'], 'dep_manager')) else ('Basic' if app_systems['compiler'] else 'Failed')
     print(f"   ✅ Compiler: {enhanced_status}")
+    gpu_status = 'Enabled' if app_systems.get('gpu_monitoring') else 'Limited/Disabled'
+    print(f"   🎮 GPU Monitoring: {gpu_status}")
     
     check_system_requirements()
     

@@ -136,7 +136,7 @@ const CodeEditor = ({
             onClick={handleCopyCode}
             title="Copy Code"
           >
-            📋
+            Copy
           </button>
           
           <button
@@ -145,7 +145,7 @@ const CodeEditor = ({
             disabled={!code.trim() || isLoading}
             title="Send code for AI review"
           >
-            {isLoading ? '⏳' : '🔍'} Review
+            {isLoading ? 'Reviewing…' : 'Review'}
           </button>
         </div>
       </div>

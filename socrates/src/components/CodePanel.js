@@ -188,7 +188,7 @@ const CodePanel = ({
       <div className="code-panel">
         <div className="code-panel-header">
           <div className="code-panel-title">
-            <span className="code-icon">💻</span>
+            <span className="code-icon">Code</span>
             <span className="title-text">{title}</span>
             <span className="language-badge">{getLanguageDisplayName(language)}</span>
             {isModified && <span className="modified-indicator">●</span>}
@@ -200,7 +200,7 @@ const CodePanel = ({
               onClick={handleCopyCode}
               title="Copy Code"
             >
-              📋 Copy
+              Copy
             </button>
             
             {isModified && (
@@ -209,7 +209,7 @@ const CodePanel = ({
                 onClick={handleReset}
                 title="Reset to original"
               >
-                ↺ Reset
+                Reset
               </button>
             )}
             
@@ -249,9 +249,9 @@ const CodePanel = ({
               disabled={!code.trim() || isLoading}
             >
               {isLoading ? (
-                <>⏳ Reviewing...</>
+                <>Reviewing…</>
               ) : (
-                <>🔍 Ask AI to Review</>
+                <>Ask AI to Review</>
               )}
             </button>
           </div>

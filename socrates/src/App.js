@@ -285,7 +285,7 @@ const CudaTutorApp = () => {
 
   // ==================== MESSAGE PERSISTENCE FUNCTIONS ====================
 
-  const saveMessage = async (chatId, sender, content, orderIndex) => {
+  const saveMessage = async (chatId, sender, content, orderIndex, performanceMetrics = null) => {
     if (!chatId) {
       console.error("Cannot save message: chatId is null");
       return null;
@@ -299,6 +299,16 @@ const CudaTutorApp = () => {
         order_index: orderIndex,
         timestamp: new Date().toISOString(),
       };
+      
+      // Only add performance_metrics if they exist (for backward compatibility)
+      if (performanceMetrics) {
+        try {
+          messageData.performance_metrics = JSON.stringify(performanceMetrics);
+        } catch (e) {
+          console.log("Could not save performance metrics:", e);
+          // Continue without performance metrics if there's an error
+        }
+      }
 
       console.log("Saving message:", messageData);
 
@@ -310,6 +320,25 @@ const CudaTutorApp = () => {
 
       if (error) {
         console.error("Error saving message:", error);
+        
+        // If error is due to performance_metrics column not existing, try without it
+        if (error.message?.includes('performance_metrics') && messageData.performance_metrics) {
+          console.log("Retrying save without performance_metrics...");
+          const { performance_metrics, ...messageDataWithoutMetrics } = messageData;
+          
+          const { data: retryData, error: retryError } = await supabase
+            .from("Messages")
+            .insert([messageDataWithoutMetrics])
+            .select()
+            .single();
+            
+          if (retryError) {
+            console.error("Retry save also failed:", retryError);
+            return null;
+          }
+          return retryData;
+        }
+        
         return null;
       }
 
@@ -341,14 +370,30 @@ const CudaTutorApp = () => {
         return [];
       }
 
-      const formattedMessages = data.map((msg) => ({
-        id: `${msg.message_id}_${msg.sender}`,
-        role: msg.sender,
-        content: msg.content,
-        timestamp: msg.timestamp,
-        messageId: msg.message_id,
-        orderIndex: msg.order_index,
-      }));
+      const formattedMessages = data.map((msg) => {
+        let performanceMetrics = null;
+        
+        // Safely parse performance metrics
+        if (msg.performance_metrics) {
+          try {
+            performanceMetrics = typeof msg.performance_metrics === 'string' ? 
+              JSON.parse(msg.performance_metrics) : 
+              msg.performance_metrics;
+          } catch (e) {
+            console.log("Could not parse performance metrics for message:", msg.message_id);
+          }
+        }
+        
+        return {
+          id: `${msg.message_id}_${msg.sender}`,
+          role: msg.sender,
+          content: msg.content,
+          timestamp: msg.timestamp,
+          messageId: msg.message_id,
+          orderIndex: msg.order_index,
+          performanceMetrics: performanceMetrics,
+        };
+      });
 
       console.log("Loaded messages for chat:", chatId, formattedMessages);
       return formattedMessages;
@@ -668,6 +713,7 @@ const CudaTutorApp = () => {
         content: data.response || "Sorry, I received an empty response.",
         timestamp: new Date().toISOString(),
         isStreaming: false,
+        performanceMetrics: data.performance_metrics || null,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -676,7 +722,8 @@ const CudaTutorApp = () => {
         chatId,
         "assistant",
         assistantMessage.content,
-        orderIndex + 1
+        orderIndex + 1,
+        assistantMessage.performanceMetrics
       );
       if (savedAssistantMessage) {
         console.log("Assistant message saved to database");

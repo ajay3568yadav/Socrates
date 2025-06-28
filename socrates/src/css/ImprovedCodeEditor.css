@@ -120,24 +120,17 @@
   transform: none;
 }
 
-.action-btn.compile-btn {
-  background: #f97316;
-  border-color: #fb923c;
-  color: white;
-}
-
-.action-btn.compile-btn:hover {
-  background: #ea580c;
-}
-
+/* Nvidia green (#76B900) for compile and run buttons */
+.action-btn.compile-btn,
 .action-btn.run-btn {
-  background: #22c55e;
-  border-color: #16a34a;
+  background: #76B900;
+  border-color: #5E9400;
   color: white;
 }
 
+.action-btn.compile-btn:hover,
 .action-btn.run-btn:hover {
-  background: #16a34a;
+  background: #5E9400;
 }
 
 .action-btn.close-btn {

@@ -166,3 +166,123 @@ textarea:focus {
 .sidebar.animating-out {
   animation: slideOutLeft 0.3s ease-out;
 }
+
+/* Add these styles to your existing App.css */
+
+:root {
+  --code-panel-width: 50%;
+  --sidebar-width: 288px;
+  --collapsed-sidebar-width: 64px; /* Add this new variable */
+}
+
+/* Update the main content adjustments for collapsed sidebar */
+@media (min-width: 769px) {
+  .app-container:has(.sidebar.desktop-hidden) .main-content {
+    margin-left: 0;
+  }
+  
+  .app-container:has(.sidebar.desktop-visible) .main-content {
+    margin-left: 0;
+  }
+  
+  /* New: Adjust main content when sidebar is collapsed */
+  .app-container:has(.sidebar.desktop-visible.collapsed) .main-content {
+    margin-left: 0;
+    padding-left: 0;
+  }
+}
+
+/* Add transition for smooth layout changes */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #111111;
+  transition: all 0.3s ease, margin-left 0.3s ease, padding-left 0.3s ease;
+  min-width: 0;
+  position: relative;
+}
+
+/* Ensure the app container handles the sidebar state changes */
+.app-container {
+  display: flex;
+  height: 100vh;
+  background: #111111;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Layout adjustments for code panel with collapsed sidebar */
+.app-container.code-panel-open .main-content {
+  width: calc(100% - var(--code-panel-width));
+}
+
+/* When sidebar is collapsed, the main content should start from the collapsed width */
+.app-container:has(.sidebar.collapsed) .main-content {
+  margin-left: 0; /* Reset margin as sidebar position is fixed */
+}
+
+@media (max-width: 768px) {
+  .app-container.code-panel-open .main-content {
+    width: 100%;
+  }
+  
+  /* On mobile, ignore collapsed state */
+  .app-container:has(.sidebar.collapsed) .main-content {
+    margin-left: 0;
+  }
+}
+
+/* Smooth transitions for all layout changes including collapse */
+* {
+  transition: width 0.3s ease, transform 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+}
+
+/* Additional improvements for the collapsed state transition */
+.sidebar {
+  transition: width 0.3s ease, transform 0.3s ease, margin-left 0.3s ease;
+}
+
+/* Ensure proper z-index stacking with collapsed sidebar */
+.sidebar {
+  z-index: 100;
+}
+
+.sidebar.collapsed {
+  z-index: 100;
+}
+
+.mobile-overlay {
+  z-index: 140;
+}
+
+.code-panel-overlay {
+  z-index: 1000;
+}
+
+/* Animation classes for collapse/expand */
+@keyframes collapseIn {
+  from {
+    width: 288px;
+  }
+  to {
+    width: 64px;
+  }
+}
+
+@keyframes expandOut {
+  from {
+    width: 64px;
+  }
+  to {
+    width: 288px;
+  }
+}
+
+.sidebar.collapsing {
+  animation: collapseIn 0.3s ease-out forwards;
+}
+
+.sidebar.expanding {
+  animation: expandOut 0.3s ease-out forwards;
+}

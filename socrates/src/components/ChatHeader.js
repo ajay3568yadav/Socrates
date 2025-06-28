@@ -1,5 +1,5 @@
-import React from "react";
-import "../css/ChatHeader.css";
+import React from 'react';
+import '../css/ChatHeader.css';
 
 const ChatHeader = ({
   currentChat,
@@ -7,91 +7,168 @@ const ChatHeader = ({
   user,
   onToggleSidebar,
   isSidebarVisible,
-  splitPaneMode = false,
+  isSidebarCollapsed,
+  backendStatus,
+  splitPaneMode,
   onExitSplitMode,
   onLogout,
 }) => {
+  // Get the appropriate icon for the sidebar toggle button
+  const getSidebarToggleIcon = () => {
+    if (!isSidebarVisible) {
+      // Sidebar is hidden - show hamburger menu
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      );
+    } else if (isSidebarCollapsed) {
+      // Sidebar is collapsed - show expand icon (double chevron right)
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 17l5-5-5-5M6 17l5-5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      );
+    } else {
+      // Sidebar is expanded - show collapse icon (double chevron left)
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      );
+    }
+  };
+
+  const getSidebarToggleTooltip = () => {
+    if (!isSidebarVisible) {
+      return "Show sidebar";
+    } else if (isSidebarCollapsed) {
+      return "Expand sidebar";
+    } else {
+      return "Collapse sidebar";
+    }
+  };
+
+  const getUserInitials = () => {
+    if (!user?.email) return "U";
+    const email = user.email;
+    if (user.user_metadata?.full_name) {
+      return user.user_metadata.full_name
+        .split(' ')
+        .map(name => name.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return email.charAt(0).toUpperCase();
+  };
+
+  const getBackendStatusIcon = () => {
+    if (backendStatus?.connecting) {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="rotating">
+          <path d="M21 12a9 9 0 11-6.219-8.56" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      );
+    }
+    return <div className="status-dot"></div>;
+  };
+
+  const getBackendStatusText = () => {
+    if (backendStatus?.connecting) return "Connecting...";
+    if (backendStatus?.online) return "Connected";
+    if (backendStatus?.limited) return "Limited";
+    return "Disconnected";
+  };
+
+  const getBackendStatusClass = () => {
+    if (backendStatus?.connecting) return "connecting";
+    if (backendStatus?.online) return "online";
+    if (backendStatus?.limited) return "limited";
+    return "offline";
+  };
+
   return (
     <div className="chat-header">
-      {/* Sidebar Toggle Button */}
-      <button
-        className="sidebar-toggle-btn"
-        onClick={onToggleSidebar}
-        title={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
-      >
-        {isSidebarVisible ? "←" : "→"}
-      </button>
+      <div className="header-left">
+        {/* Sidebar toggle button */}
+        <button
+          className="sidebar-toggle-btn"
+          onClick={onToggleSidebar}
+          title={getSidebarToggleTooltip()}
+          aria-label={getSidebarToggleTooltip()}
+        >
+          {getSidebarToggleIcon()}
+        </button>
 
-      {/* Split Pane Mode Indicator */}
-      {splitPaneMode && (
-        <div className="split-mode-indicator">
-          <span className="split-icon">⚡</span>
-          <span className="split-text">Split View</span>
+        {/* Chat/Module info */}
+        <div className="header-info">
+          {currentChat ? (
+            <div className="chat-info">
+              <h1 className="chat-title" title={currentChat.heading}>
+                {currentChat.heading}
+              </h1>
+              {selectedModule && (
+                <span className="module-badge" title={`Module: ${selectedModule.name}`}>
+                  {selectedModule.name}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="default-info">
+              <h1 className="app-title">Socratic AI</h1>
+              {selectedModule && (
+                <span className="module-badge" title={`Module: ${selectedModule.name}`}>
+                  {selectedModule.name}
+                </span>
+              )}
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Chat/Module Title */}
-      <div className="chat-title-section">
-        <h1 className="chat-title-main">
-          {currentChat
-            ? currentChat.title
-            : selectedModule
-            ? selectedModule.name
-            : "Socratic AI"}
-        </h1>
-
-        {selectedModule && !currentChat && (
-          <span className="chat-status online">CUDA GPT 3.0</span>
-        )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="chat-actions">
+      <div className="header-right">
+        {/* Split pane controls */}
         {splitPaneMode && (
           <button
-            className="chat-action exit-split"
+            className="exit-split-btn"
             onClick={onExitSplitMode}
             title="Exit split view"
+            aria-label="Exit split view"
           >
-            ✕
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
           </button>
         )}
+
+        {/* Backend status indicator */}
+        {backendStatus && (
+          <div 
+            className={`status-indicator ${getBackendStatusClass()}`}
+            title={`Backend status: ${getBackendStatusText()}`}
+          >
+            {getBackendStatusIcon()}
+            <span className="status-text">
+              {getBackendStatusText()}
+            </span>
+          </div>
+        )}
+
+        {/* User menu */}
         {user && (
-          <>
-            <button className="chat-action" title="Settings">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.4l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2.4l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
+          <div className="user-menu">
+            <button
+              className="user-menu-btn"
+              onClick={onLogout}
+              title={`Logout ${user.email}`}
+              aria-label={`User menu for ${user.email}`}
+            >
+              <div className="user-avatar">
+                {getUserInitials()}
+              </div>
             </button>
-            <button className="chat-action" onClick={onLogout} title="Logout">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </button>
-          </>
+          </div>
         )}
       </div>
     </div>

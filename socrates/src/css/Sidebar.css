@@ -1,19 +1,17 @@
-/* Sidebar.css */
+/* Sidebar.css - Clean minimal design */
 :root {
   --primary-color: #76b900;
   --primary-color-darker: #629900;
   --sidebar-bg: #000000;
   --text-color: #ffffff;
-  --text-color-subtle: #a0a0a0;
+  --text-color-subtle: #888888;
   --border-color: #333333;
   --hover-bg: #1a1a1a;
   --input-bg: #2a2a2a;
   --error-color: #e53e3e;
-  --error-bg: rgba(229, 62, 62, 0.1);
   --success-color: var(--primary-color);
-  --success-bg: rgba(118, 185, 0, 0.1);
   --warning-color: #fbbf24;
-  --warning-bg: rgba(251, 191, 36, 0.1);
+  --collapsed-width: 64px;
 }
 
 .sidebar {
@@ -22,12 +20,48 @@
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease, margin-left 0.3s ease;
+  transition: width 0.3s ease, transform 0.3s ease;
   position: relative;
   flex-shrink: 0;
   z-index: 100;
   height: 100%;
   overflow: hidden;
+}
+
+/* Collapsed state for desktop */
+.sidebar.collapsed {
+  width: var(--collapsed-width);
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 16px 12px;
+  justify-content: center;
+}
+
+.sidebar.collapsed .app-title,
+.sidebar.collapsed .close-btn {
+  display: none;
+}
+
+.sidebar.collapsed .app-logo {
+  margin: 0;
+}
+
+/* Hide text content when collapsed */
+.sidebar.collapsed .connection-status,
+.sidebar.collapsed .search-section,
+.sidebar.collapsed .sidebar-content,
+.sidebar.collapsed .sidebar-footer {
+  display: none;
+}
+
+/* Show only the collapsed navigation */
+.sidebar.collapsed .collapsed-nav {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1;
+  padding: 16px 0;
+  gap: 8px;
 }
 
 /* Desktop sidebar states */
@@ -40,6 +74,12 @@
   .sidebar.desktop-hidden {
     transform: translateX(-100%);
     margin-left: -288px;
+  }
+
+  .sidebar.desktop-visible.collapsed {
+    transform: translateX(0);
+    margin-left: 0;
+    width: var(--collapsed-width);
   }
 }
 
@@ -60,8 +100,30 @@
   .sidebar.mobile-hidden {
     transform: translateX(-100%);
   }
+
+  /* Mobile doesn't use collapsed state */
+  .sidebar.collapsed {
+    width: 288px;
+  }
+
+  .sidebar.collapsed .connection-status,
+  .sidebar.collapsed .search-section,
+  .sidebar.collapsed .sidebar-content,
+  .sidebar.collapsed .sidebar-footer {
+    display: flex;
+  }
+
+  .sidebar.collapsed .collapsed-nav {
+    display: none !important;
+  }
+
+  .sidebar.collapsed .app-title,
+  .sidebar.collapsed .close-btn {
+    display: block;
+  }
 }
 
+/* Header */
 .sidebar-header {
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
@@ -98,7 +160,7 @@
   font-weight: 700;
   flex: 1;
   color: var(--text-color);
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .close-btn {
@@ -106,10 +168,9 @@
   border: none;
   color: var(--text-color-subtle);
   cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
+  padding: 6px;
+  border-radius: 4px;
   display: none;
-  font-size: 14px;
   transition: all 0.2s;
 }
 
@@ -118,88 +179,18 @@
   color: var(--text-color);
 }
 
-/* User Info Section */
-.user-info-section {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--primary-color-darker);
-  flex-shrink: 0;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  background: var(--primary-color);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--sidebar-bg);
-  flex-shrink: 0;
-}
-
-.user-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-color);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-email {
-  font-size: 12px;
-  color: var(--text-color-subtle);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.logout-btn {
-  background: none;
-  border: none;
-  color: var(--text-color-subtle);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  font-size: 16px;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.logout-btn:hover {
-  background: var(--hover-bg);
-  color: var(--error-color);
-}
-
-/* Connection Status */
+/* Connection Status - Minimal design */
 .connection-status {
-  padding: 8px 16px;
-  margin: 16px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  margin: 12px 16px;
+  border-radius: 6px;
   font-size: 12px;
-  text-align: center;
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   transition: all 0.2s;
   flex-shrink: 0;
+  border: 1px solid transparent;
 }
 
 .connection-status.clickable {
@@ -207,51 +198,94 @@
 }
 
 .connection-status.clickable:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .connection-status.connecting {
-  background: var(--warning-bg);
-  color: var(--warning-color);
-  border: 1px solid var(--warning-color);
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.2);
 }
 
 .connection-status.connected {
-  background: var(--success-bg);
-  color: var(--success-color);
-  border: 1px solid var(--success-color);
+  background: rgba(118, 185, 0, 0.1);
+  border-color: rgba(118, 185, 0, 0.2);
 }
 
 .connection-status.error {
-  background: var(--error-bg);
-  color: var(--error-color);
-  border: 1px solid var(--error-color);
+  background: rgba(229, 62, 62, 0.1);
+  border-color: rgba(229, 62, 62, 0.2);
+}
+
+.status-indicator-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connection-status.connecting .status-dot {
+  background: var(--warning-color);
+  animation: pulse 1.5s infinite;
+}
+
+.connection-status.connected .status-dot {
+  background: var(--success-color);
+}
+
+.connection-status.error .status-dot {
+  background: var(--error-color);
+  animation: pulse 2s infinite;
+}
+
+.status-text {
+  color: var(--text-color);
+  font-weight: 500;
+  flex: 1;
 }
 
 .refresh-hint {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
+  color: var(--text-color-subtle);
   font-size: 14px;
   opacity: 0.7;
 }
 
-/* Search Section */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Search Section - Clean design */
 .search-section {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0 16px 16px 16px;
   flex-shrink: 0;
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-color-subtle);
+  z-index: 1;
 }
 
 .search-input {
   width: 100%;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
+  border-radius: 6px;
+  padding: 8px 12px 8px 36px;
+  font-size: 13px;
   color: var(--text-color);
   outline: none;
   transition: border-color 0.2s;
@@ -273,7 +307,7 @@
 }
 
 .sidebar-content::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .sidebar-content::-webkit-scrollbar-track {
@@ -282,23 +316,23 @@
 
 .sidebar-content::-webkit-scrollbar-thumb {
   background: var(--border-color);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
   background: #555555;
 }
 
-/* New Chat Button */
+/* New Chat Button - Clean minimal design */
 .new-chat-btn {
   margin: 0;
   width: 100%;
   background: var(--primary-color);
-  color: var(--sidebar-bg);
+  color: #000000;
   border: none;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 14px;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -320,30 +354,140 @@
   background-color: var(--sidebar-bg);
 }
 
+/* Collapsed Navigation */
+.collapsed-nav {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  padding: 16px 0;
+  gap: 8px;
+  align-items: center;
+}
+
+.collapsed-nav-item {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-color-subtle);
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  position: relative;
+}
+
+.collapsed-nav-item:hover {
+  background: var(--hover-bg);
+  color: var(--text-color);
+}
+
+.collapsed-nav-item.active {
+  background: var(--primary-color);
+  color: #000000;
+}
+
+.status-dot-small {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-dot-small.connecting {
+  background: var(--warning-color);
+  animation: pulse 1.5s infinite;
+}
+
+.status-dot-small.connected {
+  background: var(--success-color);
+}
+
+.status-dot-small.error {
+  background: var(--error-color);
+}
+
+/* Tooltip for collapsed nav items */
+.collapsed-nav-item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50px;
+  background: #2a2a2a;
+  color: var(--text-color);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.collapsed-nav-item:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* New chat button in collapsed state */
+.collapsed-new-chat {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-color);
+  color: #000000;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  margin-top: auto;
+  margin-bottom: 16px;
+}
+
+.collapsed-new-chat:hover {
+  background: var(--primary-color-darker);
+}
+
 /* Mobile specific styles */
 @media (max-width: 768px) {
   .close-btn {
-    display: block;
+    display: flex;
   }
 
-  .user-info-section {
-    padding: 10px 12px;
-  }
-
-  .user-name {
-    font-size: 13px;
-  }
-
-  .user-email {
-    font-size: 11px;
+  .app-title {
+    font-size: 16px;
   }
 
   .connection-status {
-    margin: 12px;
-    padding: 6px 12px;
+    margin: 8px 12px;
+    padding: 8px 12px;
+    font-size: 11px;
   }
 
   .search-section {
+    padding: 0 12px 12px 12px;
+  }
+
+  .search-input {
+    font-size: 12px;
+    padding: 7px 10px 7px 32px;
+  }
+
+  .sidebar-footer {
     padding: 12px;
+  }
+
+  .new-chat-btn {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 }

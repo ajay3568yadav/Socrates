@@ -28,6 +28,8 @@ const CudaTutorApp = () => {
   const [splitPaneWidth, setSplitPaneWidth] = useState(60);
   const [codeEditorContent, setCodeEditorContent] = useState("");
   const [codeEditorLanguage, setCodeEditorLanguage] = useState("c");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
 
   // Chat Management State
   const [currentChatId, setCurrentChatId] = useState(null);
@@ -44,6 +46,13 @@ const CudaTutorApp = () => {
     limited: false,
     connecting: false,
   });
+
+  const toggleSidebarCollapse = () => {
+  // Only allow collapse on desktop
+  if (window.innerWidth > 768) {
+    setSidebarCollapsed(prev => !prev);
+  }
+};
 
   // Session Management
   const [sessionId] = useState(
@@ -98,9 +107,20 @@ const CudaTutorApp = () => {
 
   // ==================== SIDEBAR TOGGLE FUNCTIONS ====================
 
-  const toggleSidebar = () => {
-    setSidebarOpen((prev) => !prev);
-  };
+const toggleSidebar = () => {
+  if (window.innerWidth <= 768) {
+    // Mobile: toggle open/close
+    setSidebarOpen(prev => !prev);
+  } else {
+    // Desktop: toggle collapsed/expanded if open, or just open if closed
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      setSidebarCollapsed(false);
+    } else {
+      toggleSidebarCollapse();
+    }
+  }
+};
 
   const handleOverlayClick = () => {
     if (isMobile) {
@@ -824,17 +844,20 @@ const CudaTutorApp = () => {
     return <AuthPage />;
   }
 
-  const getSidebarClasses = () => {
-    let classes = "sidebar";
+const getSidebarClasses = () => {
+  let classes = "sidebar";
 
-    if (isMobile) {
-      classes += sidebarOpen ? " mobile-visible" : " mobile-hidden";
-    } else {
-      classes += sidebarOpen ? " desktop-visible" : " desktop-hidden";
+  if (isMobile) {
+    classes += sidebarOpen ? " mobile-visible" : " mobile-hidden";
+  } else {
+    classes += sidebarOpen ? " desktop-visible" : " desktop-hidden";
+    if (sidebarCollapsed && sidebarOpen) {
+      classes += " collapsed";
     }
+  }
 
-    return classes;
-  };
+  return classes;
+};
 
   return (
     <div className="app-container">
@@ -845,46 +868,48 @@ const CudaTutorApp = () => {
 
       {/* Sidebar */}
       <div className={getSidebarClasses()}>
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          onNewChat={startNewChat}
-          onNavigateHome={navigateToWelcome}
-          onSelectChat={selectChat}
-          chats={chats || []}
-          loadingChats={loadingChats}
-          currentChatId={currentChatId}
-          backendStatus={
-            backendStatus || {
-              online: false,
-              limited: false,
-              connecting: false,
-            }
+      <Sidebar
+        isOpen={sidebarOpen}
+        isCollapsed={sidebarCollapsed}
+        onClose={() => setSidebarOpen(false)}
+        onNewChat={startNewChat}
+        onNavigateHome={navigateToWelcome}
+        onSelectChat={selectChat}
+        chats={chats || []}
+        loadingChats={loadingChats}
+        currentChatId={currentChatId}
+        backendStatus={
+          backendStatus || {
+            online: false,
+            limited: false,
+            connecting: false,
           }
-          user={user}
-          onLogout={handleLogout}
-          onRefreshBackend={checkBackendStatus}
-          onSelectModule={handleSelectModule}
-          selectedModuleId={selectedModuleId}
-          isMobile={isMobile}
-        />
+        }
+        user={user}
+        onLogout={handleLogout}
+        onRefreshBackend={checkBackendStatus}
+        onSelectModule={handleSelectModule}
+        selectedModuleId={selectedModuleId}
+        isMobile={isMobile}
+      />
       </div>
 
       {/* Main Content */}
       <div className="main-content">
-        <ChatHeader
-          currentChat={chats.find((c) => c.chat_id === currentChatId)}
-          selectedModule={
-            selectedModuleId ? { id: selectedModuleId, name: "CUDA" } : null
-          }
-          user={user}
-          onToggleSidebar={toggleSidebar}
-          isSidebarVisible={sidebarOpen}
-          backendStatus={backendStatus}
-          splitPaneMode={splitPaneMode}
-          onExitSplitMode={handleExitSplitMode}
-          onLogout={handleLogout}
-        />
+<ChatHeader
+  currentChat={chats.find((c) => c.chat_id === currentChatId)}
+  selectedModule={
+    selectedModuleId ? { id: selectedModuleId, name: "CUDA" } : null
+  }
+  user={user}
+  onToggleSidebar={toggleSidebar}
+  isSidebarVisible={sidebarOpen}
+  isSidebarCollapsed={sidebarCollapsed}
+  backendStatus={backendStatus}
+  splitPaneMode={splitPaneMode}
+  onExitSplitMode={handleExitSplitMode}
+  onLogout={handleLogout}
+/>
 
         {splitPaneMode ? (
           /* Claude-like Split Pane Layout */

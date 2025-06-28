@@ -8,6 +8,7 @@ import sys
 import traceback
 import requests
 import subprocess
+import platform
 from pathlib import Path
 
 # Add the current directory to Python path for imports
@@ -167,12 +168,15 @@ def check_system_requirements():
     except:
         print("   ❌ Ollama not found - install and run: ollama serve")
     
+    # Determine Python command based on OS
+    python_cmd = 'python' if platform.system() == 'Windows' else 'python3'
+    
     # Check compilers
     compilers_to_check = {
         'gcc': 'C compiler',
         'g++': 'C++ compiler', 
         'nvcc': 'CUDA compiler',
-        'python3': 'Python interpreter'
+        python_cmd: 'Python interpreter'
     }
     
     for cmd, name in compilers_to_check.items():

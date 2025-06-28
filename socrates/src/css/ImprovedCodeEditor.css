@@ -143,14 +143,14 @@
 }
 
 .action-btn.compile-btn {
-  background: #f97316;
-  border-color: #fb923c;
-  color: white;
+  background: #76B900;
+  border-color: #76B900;
+  color: #111;
 }
 
 .action-btn.compile-btn:hover {
-  background: #ea580c;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  background: #689c00;
+  box-shadow: 0 2px 8px rgba(118, 185, 0, 0.3);
 }
 
 .action-btn.run-btn {
@@ -159,7 +159,6 @@
   color: #111;
 }
 
-.action-btn.compile-btn:hover,
 .action-btn.run-btn:hover {
   background: #689c00;
   box-shadow: 0 2px 8px rgba(118, 185, 0, 0.3);
@@ -222,32 +221,12 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+  position: relative;
 }
 
-/* Line Numbers */
-.line-numbers {
-  background: #1e1e1e;
-  color: #7d8590;
-  padding: 16px 8px 16px 16px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.6;
-  text-align: right;
-  user-select: none;
-  overflow: hidden;
-  white-space: pre;
-  border-right: 1px solid #30363d;
-  min-width: 50px;
-  flex-shrink: 0;
-}
 
-/* Code Editor Wrapper - for editing mode */
-.code-editor-wrapper {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
+
+
 
 /* Syntax Highlighter Container - for viewing mode */
 .syntax-highlighter-container {
@@ -255,11 +234,13 @@
   height: 100%;
   overflow: auto;
   background: #111111;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
 }
 
-.syntax-highlighter-container:hover {
-  background: #121212;
-}
+
 
 /* Custom styling for react-syntax-highlighter line numbers */
 .syntax-highlighter-container .linenumber {
@@ -319,67 +300,9 @@
   padding-right: 16px !important;
 }
 
-/* Line Numbers - only for editing mode */
-.line-numbers {
-  background: #1e1e1e;
-  color: #7d8590;
-  padding: 16px 8px 16px 16px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.6;
-  text-align: right;
-  user-select: none;
-  overflow: hidden;
-  white-space: pre;
-  border-right: 1px solid #30363d;
-  min-width: 50px;
-  flex-shrink: 0;
-}
 
-/* Code Textarea - only for editing mode */
-.code-textarea {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  background: #111111;
-  color: #f8f8f2;
-  border: none;
-  padding: 16px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.6;
-  resize: none;
-  outline: none;
-  overflow-y: auto;
-  white-space: pre;
-  word-wrap: normal;
-  overflow-wrap: normal;
-  tab-size: 2;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
 
-.code-textarea::placeholder {
-  color: #7d8590;
-  font-style: italic;
-}
 
-.code-textarea::-webkit-scrollbar {
-  width: 8px;
-}
-
-.code-textarea::-webkit-scrollbar-track {
-  background: #111111;
-}
-
-.code-textarea::-webkit-scrollbar-thumb {
-  background: #30363d;
-  border-radius: 4px;
-}
-
-.code-textarea::-webkit-scrollbar-thumb:hover {
-  background: #484f58;
-}
 
 /* Results Section */
 .results-section {
@@ -686,14 +609,9 @@
     font-size: 10px;
   }
   
-  .line-numbers {
-    padding: 12px 6px 12px 12px;
-    width: 40px;
-    font-size: 12px;
-  }
-
-  .code-textarea {
+  .code-textarea-overlay {
     padding: 12px;
+    padding-left: 62px; /* Adjusted for mobile */
     font-size: 13px;
   }
   
@@ -702,10 +620,7 @@
     font-size: 13px;
   }
   
-  .line-numbers {
-    padding: 12px 6px 12px 12px;
-    font-size: 13px;
-  }
+
   
   .results-section {
     flex: 0.5; /* Take more space on mobile */
@@ -757,7 +672,7 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  .code-textarea {
+  .code-textarea-overlay {
     border: 1px solid #484f58;
   }
   
@@ -768,4 +683,70 @@
   .result-output {
     border-width: 2px;
   }
+}
+
+/* Code Textarea Overlay - New transparent textarea for editing */
+.code-textarea-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: transparent;
+  caret-color: #f8f8f2;
+  border: none;
+  padding: 16px;
+  padding-left: 82px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  overflow-y: auto;
+  overflow-x: auto;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-wrap: normal;
+  tab-size: 2;
+  z-index: 2;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.code-textarea-overlay::placeholder {
+  color: transparent;
+}
+
+.code-textarea-overlay::selection {
+  background: rgba(118, 185, 0, 0.3);
+  color: transparent;
+}
+
+.code-textarea-overlay::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.code-textarea-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-textarea-overlay::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+.code-textarea-overlay::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* Hide the syntax highlighter's scrollbars since we're using the textarea's */
+.syntax-highlighter-container::-webkit-scrollbar {
+  display: none;
+}
+
+.syntax-highlighter-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

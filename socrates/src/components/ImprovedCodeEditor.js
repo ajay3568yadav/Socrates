@@ -25,9 +25,8 @@ const ImprovedCodeEditor = ({
   const [testScript, setTestScript] = useState('');
   const [isGeneratingTest, setIsGeneratingTest] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef(null);
-  const lineNumbersRef = useRef(null);
+  const editorContainerRef = useRef(null);
 
   // API Configuration
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
@@ -40,19 +39,6 @@ const ImprovedCodeEditor = ({
     }
   }, [initialCode]);
 
-  // Update line numbers when code changes
-  useEffect(() => {
-    updateLineNumbers();
-  }, [code]);
-
-  const updateLineNumbers = () => {
-    if (lineNumbersRef.current) {
-      const lines = code.split('\n');
-      const lineNumbers = lines.map((_, index) => index + 1).join('\n');
-      lineNumbersRef.current.textContent = lineNumbers;
-    }
-  };
-
   const handleCodeChange = (e) => {
     const value = e.target.value;
     setCode(value);
@@ -60,11 +46,13 @@ const ImprovedCodeEditor = ({
   };
 
   const handleScroll = (e) => {
-    // Sync scroll between textarea and line numbers
-    const scrollTop = e.target.scrollTop;
-    
-    if (lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = scrollTop;
+    // Sync scroll between textarea and syntax highlighter
+    if (editorContainerRef.current) {
+      const syntaxContainer = editorContainerRef.current.querySelector('.syntax-highlighter-container');
+      if (syntaxContainer) {
+        syntaxContainer.scrollTop = e.target.scrollTop;
+        syntaxContainer.scrollLeft = e.target.scrollLeft;
+      }
     }
   };
 
@@ -325,9 +313,8 @@ const ImprovedCodeEditor = ({
               </svg>
             ) : (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                <path d="M12 1v6m0 6v6m11-6h-6m-6 0H1m15.5-8.5l-4.24 4.24m-6.36 0L2.5 2.5m17 17l-4.24-4.24m-6.36 0L2.5 21.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             )}
             <span>{isCompiling ? 'Compiling...' : 'Compile'}</span>
@@ -405,73 +392,58 @@ const ImprovedCodeEditor = ({
       {/* Editor Content */}
       <div className={`editor-content ${showResults ? 'with-results' : ''}`}>
         <div className="code-section">
-          <div className="editor-container">
-            {/* Toggle between editing and viewing modes */}
-            {isEditing ? (
-              <div className="code-editor-wrapper">
-                {/* Line Numbers */}
-                <div
-                  ref={lineNumbersRef}
-                  className="line-numbers"
-                />
-
-                {/* Code Editor Textarea */}
-                <textarea
-                  ref={textareaRef}
-                  value={code}
-                  onChange={handleCodeChange}
-                  onKeyDown={handleKeyDown}
-                  onScroll={handleScroll}
-                  className="code-textarea"
-                  placeholder={`Write your ${language.toUpperCase()} code here...`}
-                  spellCheck={false}
-                  onBlur={() => setIsEditing(false)}
-                  autoFocus
-                />
-              </div>
-            ) : (
-              <div 
-                className="syntax-highlighter-container"
-                onClick={() => setIsEditing(true)}
+          <div className="editor-container" ref={editorContainerRef}>
+            {/* Syntax Highlighter (always visible) */}
+            <div className="syntax-highlighter-container">
+              <SyntaxHighlighter
+                language={language === 'cuda' ? 'cpp' : language}
+                style={vscDarkPlus}
+                customStyle={{
+                  margin: 0,
+                  padding: '16px',
+                  background: 'transparent',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace",
+                  minHeight: '200px',
+                  pointerEvents: 'none' // Prevent interaction with the syntax highlighter
+                }}
+                showLineNumbers={true}
+                lineNumberStyle={{
+                  color: '#7d8590',
+                  paddingRight: '16px',
+                  paddingLeft: '16px',
+                  backgroundColor: 'transparent',
+                  userSelect: 'none',
+                  borderRight: 'none',
+                  minWidth: '50px',
+                  textAlign: 'right',
+                  fontSize: '14px',
+                  fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace"
+                }}
+                lineNumberContainerStyle={{
+                  backgroundColor: 'transparent',
+                  borderRight: 'none',
+                  paddingRight: '0',
+                  marginRight: '16px'
+                }}
+                wrapLongLines={false}
               >
-                <SyntaxHighlighter
-                  language={language === 'cuda' ? 'cpp' : language}
-                  style={vscDarkPlus}
-                  customStyle={{
-                    margin: 0,
-                    padding: '16px',
-                    background: 'transparent',
-                    fontSize: '14px',
-                    lineHeight: '1.6',
-                    fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace",
-                    minHeight: '200px',
-                    cursor: 'text'
-                  }}
-                  showLineNumbers={true}
-                  lineNumberStyle={{
-                    color: '#7d8590',
-                    paddingRight: '16px',
-                    paddingLeft: '16px',
-                    backgroundColor: 'transparent',
-                    userSelect: 'none',
-                    borderRight: 'none',
-                    minWidth: '50px',
-                    textAlign: 'right',
-                    fontSize: '14px',
-                    fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace"
-                  }}
-                  lineNumberContainerStyle={{
-                    backgroundColor: 'transparent',
-                    borderRight: 'none',
-                    paddingRight: '0',
-                    marginRight: '16px'
-                  }}
-                  wrapLongLines={false}
-                >
-                  {code || `Write your ${language.toUpperCase()} code here...`}
-                </SyntaxHighlighter>
-              </div>
-            )}
+                {code || ' '}
+              </SyntaxHighlighter>
+            </div>
+
+            {/* Transparent textarea overlay for editing */}
+            <textarea
+              ref={textareaRef}
+              value={code}
+              onChange={handleCodeChange}
+              onKeyDown={handleKeyDown}
+              onScroll={handleScroll}
+              className="code-textarea-overlay"
+              placeholder={`Write your ${language.toUpperCase()} code here...`}
+              spellCheck={false}
+            />
           </div>
         </div>
 

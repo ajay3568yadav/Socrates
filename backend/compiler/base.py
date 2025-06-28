@@ -9,6 +9,7 @@ import uuid
 import shutil
 import subprocess
 import tempfile
+import platform
 from pathlib import Path
 from typing import Dict, Any
 
@@ -28,7 +29,23 @@ class CodeCompiler:
             self.compilation_timeout = config.COMPILATION_TIMEOUT
             self.execution_timeout = config.EXECUTION_TIMEOUT
             self.max_output_size = config.MAX_OUTPUT_SIZE
-            print("✅ CodeCompiler initialized successfully")
+            # Determine Python command based on OS
+            if platform.system() == 'Windows':
+                # On Windows, use the full path to Python if 'python' command doesn't work
+                try:
+                    # First try the python command
+                    result = subprocess.run(['python', '--version'], capture_output=True, timeout=2)
+                    if result.returncode == 0:
+                        self.python_cmd = 'python'
+                    else:
+                        # If that fails, use the full path
+                        self.python_cmd = r'C:\Users\Captain\AppData\Local\Programs\Python\Python310\python.exe'
+                except:
+                    # Use full path as fallback
+                    self.python_cmd = r'C:\Users\Captain\AppData\Local\Programs\Python\Python310\python.exe'
+            else:
+                self.python_cmd = 'python3'
+            print(f"✅ CodeCompiler initialized successfully (using {self.python_cmd})")
         except Exception as e:
             print(f"❌ Error initializing CodeCompiler: {e}")
             raise
@@ -58,7 +75,7 @@ class CodeCompiler:
                 'extension': '.py',
                 'compiler': None,  # Interpreted
                 'compile_args': [],
-                'run_command': 'python3 {source}'
+                'run_command': f'{self.python_cmd} {{source}}'
             }
         }
         return configs.get(language, configs['c'])
@@ -318,7 +335,7 @@ if __name__ == "__main__":
         try:
             # Prepare execution command
             if config['compiler'] is None:  # Python
-                run_cmd = ['python3', comp_info['source_file']]
+                run_cmd = [self.python_cmd, comp_info['source_file']]
             else:
                 executable_name = os.path.basename(comp_info['executable'])
                 run_cmd = config['run_command'].format(executable=executable_name).split()

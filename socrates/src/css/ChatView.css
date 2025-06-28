@@ -1,4 +1,4 @@
-/* ChatView.css - Updated for split pane mode */
+/* ChatView.css - Updated for centered chat layout with constrained width */
 .chat-view {
   flex: 1;
   display: flex;
@@ -6,55 +6,89 @@
   overflow: hidden;
   position: relative;
   height: 100%;
+  background: #111111;
 }
 
 .chat-view.split-pane-mode {
-  /* Specific styling when in split pane mode */
   border-right: 1px solid #30363d;
+  background: #0d1117;
 }
 
 .messages-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 20px;
   scroll-behavior: smooth;
   -webkit-scroll-behavior: smooth;
   position: relative;
+  background: transparent;
+  display: flex !important;
+  justify-content: center !important;
 }
 
 .chat-view.split-pane-mode .messages-container {
-  /* Tighter padding in split mode */
-  padding: 12px 16px;
+  /* No additional padding changes needed for split mode */
 }
 
 .messages-wrapper {
-  max-width: 100%;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 800px !important; /* Reduced conversation width */
+  margin: 0 auto !important; /* Center the wrapper */
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-height: 100%;
-  padding-bottom: 20px;
+  padding: 20px 24px 40px 24px !important; /* Add horizontal padding */
+  box-sizing: border-box;
 }
 
 .chat-view.split-pane-mode .messages-wrapper {
-  max-width: none;
-  gap: 12px;
+  padding: 16px 20px 32px 20px !important;
+  max-width: 700px !important; /* Slightly smaller for split mode */
+  margin: 0 auto !important;
 }
 
+/* Individual message containers with proper alignment */
+.messages-wrapper > .message {
+  width: 100%;
+  margin-bottom: 24px;
+  display: flex;
+  position: relative;
+}
+
+.messages-wrapper > .message.user {
+  justify-content: flex-end; /* Align user messages to the right */
+  margin-bottom: 24px;
+  padding-bottom: 0;
+}
+
+.messages-wrapper > .message.assistant {
+  justify-content: flex-start; /* AI messages start from left */
+  margin-bottom: 0;
+  padding-bottom: 24px;
+}
+
+.messages-wrapper > .message.assistant + .message.user {
+  margin-top: 20px;
+}
+
+.messages-wrapper > .message.user + .message.assistant {
+  margin-top: 20px;
+}
+
+/* Scroll to bottom button - centered */
 .scroll-to-bottom-btn {
   position: absolute;
-  bottom: 80px;
-  right: 20px;
-  width: 36px;
-  height: 36px;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #22c55e;
   color: white;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: bold;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: all 0.2s;
@@ -66,64 +100,214 @@
 
 .scroll-to-bottom-btn:hover {
   background: #16a34a;
-  transform: translateY(-2px);
+  transform: translateX(-50%) translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 .scroll-to-bottom-btn:active {
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .chat-view.split-pane-mode .scroll-to-bottom-btn {
-  right: 12px;
-  bottom: 70px;
-  width: 32px;
-  height: 32px;
-  font-size: 12px;
+  bottom: 80px;
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
 }
 
 /* Chat Input Wrapper */
 .chat-input-wrapper {
   flex-shrink: 0;
-  background: #1a1a1a;
-  border-top: 1px solid #333333;
+  border-top: none; /* Remove the horizontal line */
+  display: flex;
+  justify-content: center;
 }
 
 .chat-view.split-pane-mode .chat-input-wrapper {
   background: #0d1117;
-  border-top-color: #30363d;
+  border-top: none; /* Remove the horizontal line */
+}
+
+/* Constrain chat input to match messages width */
+.chat-input-wrapper > * {
+  width: 100%;
+  max-width: 800px !important;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+.chat-view.split-pane-mode .chat-input-wrapper > * {
+  max-width: 700px !important;
+  padding: 0 20px;
+}
+
+/* Special styling for continuous conversation flow */
+.messages-wrapper > .message.assistant:not(:first-child) {
+  border-top: 1px solid rgba(48, 54, 61, 0.3);
+  padding-top: 24px;
+}
+
+.messages-wrapper > .message.assistant:first-child {
+  padding-top: 0;
+}
+
+/* REMOVED PROBLEMATIC HOVER EFFECTS - This was causing text wrapping */
+/* 
+.message.assistant:hover {
+  background: rgba(22, 27, 34, 0.3);
+  transition: background-color 0.2s ease;
+  border-radius: 8px;
+  margin: 0 -12px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+*/
+
+/* Keep basic transition but no layout changes */
+.message.assistant {
+  transition: background-color 0.2s ease;
+  border-radius: 0;
+  position: relative;
+}
+
+/* Optional: Add subtle hover effect without changing layout */
+.message.assistant:hover {
+  background: rgba(22, 27, 34, 0.2);
+  transition: background-color 0.2s ease;
+  /* NO margin/padding changes that cause text wrapping */
+}
+
+/* Better visual separation between different conversation turns */
+.message.assistant + .message.assistant {
+  border-top: 1px solid rgba(48, 54, 61, 0.2);
+  margin-top: 0;
+  padding-top: 24px;
+}
+
+.message.user + .message.assistant {
+  margin-top: 32px;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* Typography improvements for better readability */
+.messages-wrapper {
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-  .chat-view {
-    /* On mobile, split pane becomes stacked */
-  }
-  
   .chat-view.split-pane-mode {
     border-right: none;
   }
   
-  .messages-container {
-    padding: 12px 16px;
+  .messages-wrapper {
+    padding: 16px 16px 32px 16px;
+    max-width: none; /* Full width on mobile */
+  }
+  
+  .chat-view.split-pane-mode .messages-wrapper {
+    padding: 16px 16px 32px 16px;
+    max-width: none;
+  }
+  
+  .chat-input-wrapper > * {
+    padding: 0 16px;
+    max-width: none;
+  }
+  
+  .chat-view.split-pane-mode .chat-input-wrapper > * {
+    padding: 0 16px;
+    max-width: none;
+  }
+  
+  .messages-wrapper > .message.assistant {
+    padding-bottom: 20px;
+  }
+  
+  .messages-wrapper > .message.user {
+    margin-bottom: 20px;
+  }
+  
+  .messages-wrapper > .message.assistant + .message.assistant {
+    padding-top: 20px;
   }
   
   .scroll-to-bottom-btn {
     bottom: 90px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
   }
   
   .chat-view.split-pane-mode .scroll-to-bottom-btn {
-    right: 16px;
     bottom: 80px;
   }
 }
 
-/* Scrollbar styling */
+@media (max-width: 480px) {
+  .messages-wrapper {
+    padding: 12px 12px 24px 12px;
+  }
+  
+  .chat-input-wrapper > * {
+    padding: 0 12px;
+  }
+  
+  .message.user .message-content {
+    max-width: 90%;
+  }
+}
+
+/* Tablet responsiveness */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .messages-wrapper {
+    max-width: 900px;
+    padding: 20px 20px 40px 20px;
+  }
+  
+  .chat-view.split-pane-mode .messages-wrapper {
+    max-width: 800px;
+  }
+  
+  .chat-input-wrapper > * {
+    max-width: 900px;
+    padding: 0 20px;
+  }
+  
+  .chat-view.split-pane-mode .chat-input-wrapper > * {
+    max-width: 800px;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1400px) {
+  .messages-wrapper {
+    max-width: 1400px;
+    padding: 24px 32px 48px 32px;
+  }
+  
+  .chat-view.split-pane-mode .messages-wrapper {
+    max-width: 1200px;
+  }
+  
+  .chat-input-wrapper > * {
+    max-width: 1400px;
+    padding: 0 32px;
+  }
+  
+  .chat-view.split-pane-mode .chat-input-wrapper > * {
+    max-width: 1200px;
+  }
+}
+
+/* Scrollbar styling for the messages container */
 .messages-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -149,17 +333,36 @@
   background: #484f58;
 }
 
-/* Smooth transitions */
-.chat-view {
-  transition: all 0.3s ease;
-}
-
-.messages-container {
-  transition: padding 0.3s ease;
-}
-
 /* Focus states for accessibility */
 .scroll-to-bottom-btn:focus {
   outline: 2px solid #22c55e;
   outline-offset: 2px;
+}
+
+/* Performance optimizations */
+.messages-container {
+  contain: layout style paint;
+}
+
+.message {
+  contain: layout style;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .message.assistant {
+    border: 1px solid #484f58;
+  }
+  
+  .messages-wrapper > .message.assistant + .message.assistant {
+    border-top-color: #484f58;
+  }
+  
+  .scroll-to-bottom-btn {
+    border: 2px solid #22c55e;
+  }
+  
+  .message.user .message-content {
+    border-color: #718096;
+  }
 }

@@ -94,6 +94,88 @@ def create_chat_blueprint(rag_system):
                 'status': 'error'
             }), 500
     
+    @bp.route('/evaluate-quiz', methods=['POST', 'OPTIONS'])
+    def evaluate_quiz():
+        """Evaluate quiz answers and provide feedback"""
+        if request.method == 'OPTIONS':
+            return '', 200
+            
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No JSON data provided'}), 400
+                
+            quiz_data = data.get('quiz_data', {})
+            user_answers = data.get('user_answers', {})
+            session_id = data.get('session_id', 'default')
+            
+            if not quiz_data or not user_answers:
+                return jsonify({'error': 'Missing quiz data or answers'}), 400
+            
+            print(f"📝 Evaluating quiz for session {session_id}")
+            
+            # Calculate score and generate feedback
+            total_questions = len(quiz_data.get('questions', []))
+            correct_count = 0
+            detailed_feedback = []
+            
+            for question in quiz_data.get('questions', []):
+                q_id = str(question['id'])
+                user_answer = user_answers.get(q_id)
+                correct_answer = question['correct_answer']
+                
+                is_correct = user_answer == correct_answer
+                if is_correct:
+                    correct_count += 1
+                
+                feedback_item = {
+                    'question_id': question['id'],
+                    'question': question['question'],
+                    'user_answer': user_answer,
+                    'correct_answer': correct_answer,
+                    'is_correct': is_correct,
+                    'explanation': question['explanation'],
+                    'user_answer_text': question['options'][user_answer] if user_answer is not None and 0 <= user_answer < len(question['options']) else 'No answer',
+                    'correct_answer_text': question['options'][correct_answer]
+                }
+                detailed_feedback.append(feedback_item)
+            
+            # Calculate percentage
+            score_percentage = (correct_count / total_questions) * 100 if total_questions > 0 else 0
+            
+            # Generate overall feedback message
+            if score_percentage >= 80:
+                overall_message = f"🎉 Excellent work! You scored {correct_count}/{total_questions} ({score_percentage:.0f}%). You have a strong understanding of CUDA concepts!"
+            elif score_percentage >= 60:
+                overall_message = f"👍 Good job! You scored {correct_count}/{total_questions} ({score_percentage:.0f}%). Review the explanations below to strengthen your understanding."
+            else:
+                overall_message = f"📚 Keep studying! You scored {correct_count}/{total_questions} ({score_percentage:.0f}%). Don't worry - CUDA takes practice. Review the explanations and try again!"
+            
+            evaluation_result = {
+                'score': correct_count,
+                'total': total_questions,
+                'percentage': score_percentage,
+                'overall_message': overall_message,
+                'detailed_feedback': detailed_feedback,
+                'topic': quiz_data.get('topic', 'CUDA Programming')
+            }
+            
+            print(f"✅ Quiz evaluated: {correct_count}/{total_questions} ({score_percentage:.0f}%)")
+            
+            return jsonify({
+                'success': True,
+                'evaluation': evaluation_result,
+                'session_id': session_id
+            })
+            
+        except Exception as e:
+            print(f"❌ Error evaluating quiz: {e}")
+            traceback.print_exc()
+            return jsonify({
+                'error': str(e),
+                'success': False
+            }), 500
+    
     @bp.route('/clear-session', methods=['POST'])
     def clear_session():
         """Clear a specific conversation session"""

@@ -1,8 +1,9 @@
 import React from 'react';
 import '../css/TypingIndicator.css'; 
-const TypingIndicator = () => {
+
+const TypingIndicator = ({ splitPaneMode = false }) => {
   return (
-    <div className="typing-indicator">
+    <div className={`typing-indicator ${splitPaneMode ? 'split-mode' : ''}`}>
       <div className="message-avatar">🤖</div>
       <div className="typing-content">
         <div className="typing-text">

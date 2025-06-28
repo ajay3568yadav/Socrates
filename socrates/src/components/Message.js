@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import '../css/Message.css'; 
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import Quiz from './Quiz';
+import QuizFeedback from './QuizFeedback';
 
 const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPaneMode = false }) => {
   const isUser = message.role === 'user';
@@ -113,6 +115,49 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
     return processed;
   };
 
+  // Quiz submission handler
+  const handleQuizSubmit = async (quizData, userAnswers) => {
+    console.log('Quiz submission started:', { quizData, userAnswers });
+    
+    if (!onSendMessage) {
+      console.error('onSendMessage not available');
+      return;
+    }
+
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+      
+      const response = await fetch(`${API_BASE_URL}/api/evaluate-quiz`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quiz_data: quizData,
+          user_answers: userAnswers,
+          session_id: 'current_session'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Quiz evaluation response:', data);
+      
+      if (data.success && data.evaluation) {
+        // Send formatted feedback as a special message
+        const feedbackText = `QUIZ_FEEDBACK:${JSON.stringify(data.evaluation)}`;
+        onSendMessage(feedbackText);
+      }
+      
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+      onSendMessage('There was an error evaluating your quiz. Please try again.');
+    }
+  };
+
   // Set up event listeners for code block buttons (copy/edit/compile)
   useEffect(() => {
     const messageElement = messageRef.current;
@@ -183,6 +228,36 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
 
   // Render content with syntax highlighting for code blocks
   const renderContent = () => {
+    // Check if this is a quiz message
+    if (message.content && message.content.startsWith('QUIZ_DATA:')) {
+      try {
+        const quizDataString = message.content.replace('QUIZ_DATA:', '');
+        const quizData = JSON.parse(quizDataString);
+        
+        return (
+          <div className="quiz-message">
+            <Quiz 
+              quizData={quizData}
+              onSubmit={(userAnswers) => handleQuizSubmit(quizData, userAnswers)}
+              isLoading={isLoading}
+            />
+          </div>
+        );
+      } catch (error) {
+        console.error('Error parsing quiz data:', error);
+        return <div className="message-text">Error loading quiz. Please try again.</div>;
+      }
+    }
+    
+    // Check if this is quiz feedback
+    if (message.quizEvaluation) {
+      return (
+        <div className="quiz-feedback-message">
+          <QuizFeedback evaluation={message.quizEvaluation} />
+        </div>
+      );
+    }
+    
     // Parse and render blocks for both user and assistant
     const blocks = parseContentBlocks(message.content || '');
     // Store code blocks for event handlers

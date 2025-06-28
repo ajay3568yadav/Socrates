@@ -94,7 +94,7 @@ const CudaTutorApp = () => {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  }, [sidebarOpen]);
 
   // ==================== SIDEBAR TOGGLE FUNCTIONS ====================
 
@@ -145,6 +145,7 @@ const CudaTutorApp = () => {
       setLoading(false);
     });
 
+    // Global function for copying code
     window.copyCodeToClipboard = async (encodedCode, buttonElement) => {
       try {
         const code = decodeURIComponent(encodedCode);
@@ -605,6 +606,50 @@ const CudaTutorApp = () => {
     let chatId = currentChatId;
     let orderIndex = messages.length;
 
+    // ========== SPECIAL HANDLING FOR QUIZ FEEDBACK ==========
+    if (message.startsWith('QUIZ_FEEDBACK:')) {
+      console.log("Processing quiz feedback message");
+      const evaluationJson = message.replace('QUIZ_FEEDBACK:', '');
+      
+      try {
+        const evaluation = JSON.parse(evaluationJson);
+        console.log("Parsed quiz evaluation:", evaluation);
+        
+        // Create feedback message with quizEvaluation property
+        const feedbackMessage = {
+          id: Date.now() + '_quiz_feedback',
+          role: 'assistant',
+          content: '', // Empty content since we're using quizEvaluation
+          quizEvaluation: evaluation, // This will trigger QuizFeedback component
+          timestamp: new Date().toISOString(),
+        };
+        
+        // Add feedback message to chat
+        setMessages(prev => [...prev, feedbackMessage]);
+        setIsLoading(false);
+        
+        // Save to database with a summary
+        if (chatId) {
+          await saveMessage(
+            chatId,
+            'assistant',
+            `Quiz Results: ${evaluation.score}/${evaluation.total} (${evaluation.percentage.toFixed(0)}%) - ${evaluation.overall_message}`,
+            orderIndex
+          );
+        }
+        
+        console.log("Quiz feedback message added successfully");
+        return; // Exit early for quiz feedback
+        
+      } catch (error) {
+        console.error('Error parsing quiz feedback:', error);
+        // If parsing fails, treat as regular message
+      }
+    }
+
+    // ========== REGULAR MESSAGE HANDLING ==========
+    
+    // Create new chat if needed
     if (!chatId) {
       console.log("No current chat, creating new chat...");
       const newChat = await createNewChatForMessage(message);
@@ -616,6 +661,7 @@ const CudaTutorApp = () => {
       orderIndex = 0;
     }
 
+    // Add user message to UI
     const userMessage = {
       id: Date.now() + "_user",
       role: "user",
@@ -627,6 +673,7 @@ const CudaTutorApp = () => {
     setIsLoading(true);
     setCurrentView("chat");
 
+    // Save user message to database
     const savedUserMessage = await saveMessage(
       chatId,
       "user",
@@ -637,10 +684,12 @@ const CudaTutorApp = () => {
       console.log("User message saved to database");
     }
 
+    // Update chat title if this is the first message
     if (orderIndex === 0) {
       await updateChatTitle(chatId, message);
     }
 
+    // Send message to backend
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
@@ -661,7 +710,9 @@ const CudaTutorApp = () => {
       }
 
       const data = await response.json();
+      console.log("Backend response:", data);
 
+      // Create assistant message
       const assistantMessage = {
         id: Date.now() + "_assistant",
         role: "assistant",
@@ -672,6 +723,7 @@ const CudaTutorApp = () => {
 
       setMessages((prev) => [...prev, assistantMessage]);
 
+      // Save assistant message to database
       const savedAssistantMessage = await saveMessage(
         chatId,
         "assistant",
@@ -681,6 +733,7 @@ const CudaTutorApp = () => {
       if (savedAssistantMessage) {
         console.log("Assistant message saved to database");
       }
+      
     } catch (error) {
       console.error("Error sending message:", error);
 
@@ -694,6 +747,7 @@ const CudaTutorApp = () => {
 
       setMessages((prev) => [...prev, errorMessage]);
 
+      // Save error message to database
       await saveMessage(
         chatId,
         "assistant",

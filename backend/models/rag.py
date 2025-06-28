@@ -10,6 +10,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 from datasets import load_dataset
 import traceback
+import json
+import uuid
 from config import get_config
 
 config = get_config()
@@ -81,9 +83,217 @@ class SimpleRAG:
         results = [self.knowledge[i] for i in top_indices]
         return results
     
+    def detect_quiz_request(self, query):
+        """Detect if the user is requesting a quiz"""
+        quiz_keywords = ['quiz', 'test me', 'question me', 'practice questions', 'mcq', 'multiple choice']
+        query_lower = query.lower()
+        return any(keyword in query_lower for keyword in quiz_keywords)
+
+    def generate_quiz_data(self, topic="CUDA programming", conversation_context=""):
+        """Generate quiz data with 3 questions"""
+        # Create a prompt for quiz generation
+        quiz_prompt = f"""Generate a CUDA programming quiz with exactly 3 questions based on the topic: {topic}
+
+Based on conversation context:
+{conversation_context}
+
+Create a JSON response with this EXACT format:
+{{
+  "quiz_id": "unique_id_here",
+  "topic": "{topic}",
+  "questions": [
+    {{
+      "id": 1,
+      "type": "mcq",
+      "question": "What does CUDA stand for?",
+      "options": [
+        "Compute Unified Device Architecture",
+        "Central Unit Device Architecture", 
+        "Computer Universal Data Architecture",
+        "Core Unified Development Architecture"
+      ],
+      "correct_answer": 0,
+      "explanation": "CUDA stands for Compute Unified Device Architecture, NVIDIA's parallel computing platform."
+    }},
+    {{
+      "id": 2,
+      "type": "true_false",
+      "question": "CUDA can only run on NVIDIA GPUs.",
+      "options": ["True", "False"],
+      "correct_answer": 0,
+      "explanation": "True. CUDA is proprietary to NVIDIA and only works on NVIDIA GPUs."
+    }},
+    {{
+      "id": 3,
+      "type": "mcq", 
+      "question": "Which memory type is fastest in CUDA?",
+      "options": [
+        "Global memory",
+        "Shared memory", 
+        "Register memory",
+        "Texture memory"
+      ],
+      "correct_answer": 2,
+      "explanation": "Register memory is the fastest memory type in CUDA, followed by shared memory."
+    }}
+  ]
+}}
+
+Guidelines:
+- Always create exactly 3 questions
+- Mix MCQ (4 options) and True/False (2 options) questions
+- Include clear explanations for each answer
+- Make questions educational and relevant to CUDA programming
+- Correct_answer should be the index (0-based) of the correct option
+- Keep questions at appropriate difficulty level
+
+Return ONLY the JSON, no additional text:"""
+
+        try:
+            response = requests.post(f"{config.OLLAMA_BASE_URL}/api/generate", 
+                json={
+                    "model": config.OLLAMA_MODEL,
+                    "prompt": quiz_prompt,
+                    "stream": False,
+                    "options": {
+                        "num_predict": 2000,
+                        "temperature": 0.3,  # Lower temperature for more consistent JSON
+                        "top_p": 0.9,
+                        "stop": ["Human:", "User:", "Assistant:"],
+                        "num_ctx": 4096
+                    }
+                }, 
+                timeout=config.OLLAMA_TIMEOUT
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                quiz_text = result.get("response", "").strip()
+                
+                # Try to parse the JSON response
+                try:
+                    # Clean up the response to extract JSON
+                    if '```json' in quiz_text:
+                        json_start = quiz_text.find('```json') + 7
+                        json_end = quiz_text.find('```', json_start)
+                        quiz_text = quiz_text[json_start:json_end].strip()
+                    elif '{' in quiz_text:
+                        # Find first { and last }
+                        start = quiz_text.find('{')
+                        end = quiz_text.rfind('}') + 1
+                        quiz_text = quiz_text[start:end]
+                    
+                    quiz_data = json.loads(quiz_text)
+                    
+                    # Validate the quiz data structure
+                    if self._validate_quiz_data(quiz_data):
+                        # Ensure unique ID
+                        quiz_data['quiz_id'] = str(uuid.uuid4())
+                        return quiz_data
+                    else:
+                        return self._get_fallback_quiz()
+                        
+                except json.JSONDecodeError as e:
+                    print(f"JSON parsing error: {e}")
+                    return self._get_fallback_quiz()
+            else:
+                return self._get_fallback_quiz()
+                
+        except Exception as e:
+            print(f"Error generating quiz: {e}")
+            return self._get_fallback_quiz()
+
+    def _validate_quiz_data(self, quiz_data):
+        """Validate quiz data structure"""
+        try:
+            required_fields = ['quiz_id', 'topic', 'questions']
+            if not all(field in quiz_data for field in required_fields):
+                return False
+                
+            questions = quiz_data['questions']
+            if len(questions) != 3:
+                return False
+                
+            for q in questions:
+                required_q_fields = ['id', 'type', 'question', 'options', 'correct_answer', 'explanation']
+                if not all(field in q for field in required_q_fields):
+                    return False
+                    
+                if q['type'] == 'mcq' and len(q['options']) != 4:
+                    return False
+                elif q['type'] == 'true_false' and len(q['options']) != 2:
+                    return False
+                    
+                if not (0 <= q['correct_answer'] < len(q['options'])):
+                    return False
+                    
+            return True
+        except:
+            return False
+
+    def _get_fallback_quiz(self):
+        """Fallback quiz if generation fails"""
+        return {
+            "quiz_id": str(uuid.uuid4()),
+            "topic": "CUDA Programming Basics",
+            "questions": [
+                {
+                    "id": 1,
+                    "type": "mcq",
+                    "question": "What does CUDA stand for?",
+                    "options": [
+                        "Compute Unified Device Architecture",
+                        "Central Unit Device Architecture",
+                        "Computer Universal Data Architecture", 
+                        "Core Unified Development Architecture"
+                    ],
+                    "correct_answer": 0,
+                    "explanation": "CUDA stands for Compute Unified Device Architecture, NVIDIA's parallel computing platform and programming model."
+                },
+                {
+                    "id": 2,
+                    "type": "true_false",
+                    "question": "CUDA can only run on NVIDIA GPUs.",
+                    "options": ["True", "False"],
+                    "correct_answer": 0,
+                    "explanation": "True. CUDA is proprietary to NVIDIA and only works on NVIDIA GPUs, unlike OpenCL which is cross-platform."
+                },
+                {
+                    "id": 3,
+                    "type": "mcq",
+                    "question": "Which function synchronizes all threads in a CUDA block?",
+                    "options": [
+                        "__syncthreads()",
+                        "__syncwarp()",
+                        "cudaDeviceSynchronize()",
+                        "__threadfence()"
+                    ],
+                    "correct_answer": 0,
+                    "explanation": "__syncthreads() synchronizes all threads within a block, ensuring they reach this point before continuing execution."
+                }
+            ]
+        }
+    
     def generate_response(self, query, conversation_context="", stream=False):
-        """Generate response using RAG with conversation context"""
+        """Modified to handle quiz requests"""
         
+        # Check if this is a quiz request
+        if self.detect_quiz_request(query):
+            # Extract topic from query if specified
+            topic = "CUDA programming"
+            if "about" in query.lower():
+                # Try to extract topic after "about"
+                parts = query.lower().split("about")
+                if len(parts) > 1:
+                    topic = parts[1].strip()[:50]  # Limit topic length
+            
+            # Generate quiz data
+            quiz_data = self.generate_quiz_data(query, conversation_context)
+            
+            # Return quiz as JSON string with special marker
+            return "QUIZ_DATA:" + json.dumps(quiz_data)
+        
+        # Regular response generation (existing code)
         # 1. Retrieve relevant examples
         examples = self.search(query)
         
@@ -145,7 +355,6 @@ Provide a helpful answer:"""
                     for line in response.iter_lines():
                         if line:
                             try:
-                                import json
                                 chunk = json.loads(line.decode('utf-8'))
                                 if 'response' in chunk:
                                     full_response += chunk['response']

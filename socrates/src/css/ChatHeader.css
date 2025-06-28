@@ -84,7 +84,7 @@
 
 .chat-title,
 .app-title {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #ffffff;
   margin: 0;
@@ -311,7 +311,6 @@
   .chat-title,
   .app-title {
     max-width: 500px;
-    font-size: 20px;
   }
   
   .module-badge {

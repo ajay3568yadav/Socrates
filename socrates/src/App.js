@@ -13,6 +13,14 @@ import supabase from "./config/supabaseClient";
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || "http://localhost:5001";
 
+// Add this after the API_BASE_URL constant
+const MODULE_TO_COURSE = {
+  "c801ac6c-1232-4c96-89b1-c4eadf41026c": "CUDA Basics",
+  "d26ccd91-cdf9-45e3-990f-a484d764bb9d": "Memory Optimization",
+  "ff7d63fc-8646-4d9a-be5d-41a249beff02": "Kernel Development",
+  "22107ce-5027-42bf-9941-6d00117da9ae": "Performance Tuning",
+};
+
 // Main App Component with Authentication and Chat Management
 const CudaTutorApp = () => {
   // UI State
@@ -46,9 +54,14 @@ const CudaTutorApp = () => {
     connecting: false,
   });
 
-  // Model Selection State - NEW
+  // Model Selection State
   const [selectedModel, setSelectedModel] = useState('deepseek-r1');
   const [availableModels, setAvailableModels] = useState([]);
+
+  // NEW: Tutoring Mode State
+  const [tutoringMode, setTutoringMode] = useState(false);
+  const [tutoringChatId, setTutoringChatId] = useState(null);
+  const [originalChats, setOriginalChats] = useState([]); // Store original chats when entering tutoring mode
 
   const toggleSidebarCollapse = () => {
     // Only allow collapse on desktop
@@ -66,7 +79,157 @@ const CudaTutorApp = () => {
   const statusCheckInProgress = useRef(false);
   const statusIntervalRef = useRef(null);
 
-  // ==================== MODEL SELECTION FUNCTIONS - NEW ====================
+  // ==================== TUTORING MODE FUNCTIONS - NEW ====================
+
+  // Toggle tutoring mode
+  const toggleTutoringMode = async () => {
+    if (!selectedModuleId) {
+      console.error("No module selected for tutoring mode");
+      return;
+    }
+
+    if (!tutoringMode) {
+      // Entering tutoring mode
+      console.log("Entering tutoring mode for module:", selectedModuleId);
+      
+      // Store current chats
+      setOriginalChats([...chats]);
+      
+      // Create a new tutoring session
+      const tutoringChat = await createTutoringSession();
+      if (tutoringChat) {
+        setTutoringMode(true);
+        setTutoringChatId(tutoringChat.chat_id);
+        setCurrentChatId(tutoringChat.chat_id);
+        setCurrentView("chat");
+        setMessages([]);
+        
+        // Clear regular chats from view
+        setChats([]);
+        
+        // Start tutoring session with AI
+        await startTutoringSession(tutoringChat.chat_id);
+      }
+    } else {
+      // Exiting tutoring mode
+      console.log("Exiting tutoring mode");
+      
+      setTutoringMode(false);
+      setTutoringChatId(null);
+      
+      // Restore original chats
+      setChats(originalChats);
+      setOriginalChats([]);
+      
+      // Clear current chat and messages
+      setCurrentChatId(null);
+      setMessages([]);
+      setCurrentView("welcome");
+    }
+  };
+
+  // Create a tutoring session chat
+  const createTutoringSession = async () => {
+    if (!user || !selectedModuleId) return null;
+
+    try {
+      const moduleNames = {
+        "c801ac6c-1232-4c96-89b1-c4eadf41026c": "CUDA Basics",
+        "d26ccd91-cdf9-45e3-990f-a484d764bb9d": "Memory Optimization",
+        "ff7d63fc-8646-4d9a-be5d-41a249beff02": "Kernel Development",
+        "22107ce-5027-42bf-9941-6d00117da9ae": "Performance Tuning",
+      };
+
+      const moduleName = moduleNames[selectedModuleId] || "CUDA Module";
+
+      const newChat = {
+        user_id: user.id,
+        heading: `🎓 Tutoring: ${moduleName}`,
+        description: `Interactive tutoring session for ${moduleName}`,
+        timestamp: new Date().toISOString(),
+        course_id: "1e44eb02-8daa-44a0-a7ee-28f88ce6863f",
+        module_id: selectedModuleId,
+        status: "tutoring", // Special status for tutoring sessions
+      };
+
+      console.log("Creating tutoring session:", newChat);
+
+      const { data, error } = await supabase
+        .from("Chats")
+        .insert([newChat])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating tutoring session:", error);
+        return null;
+      }
+
+      console.log("Tutoring session created:", data);
+      return data;
+    } catch (error) {
+      console.error("Error creating tutoring session:", error);
+      return null;
+    }
+  };
+
+  // Start the tutoring session with AI
+  const startTutoringSession = async (chatId) => {
+    const moduleNames = {
+      "c801ac6c-1232-4c96-89b1-c4eadf41026c": "CUDA Basics",
+      "d26ccd91-cdf9-45e3-990f-a484d764bb9d": "Memory Optimization", 
+      "ff7d63fc-8646-4d9a-be5d-41a249beff02": "Kernel Development",
+      "22107ce-5027-42bf-9941-6d00117da9ae": "Performance Tuning",
+    };
+
+    const moduleName = moduleNames[selectedModuleId] || "CUDA Programming";
+    
+    const tutoringPrompt = `Hello! I'm your CUDA programming tutor, and I'm excited to help you learn about ${moduleName}! 
+
+🎓 **Welcome to Interactive Tutoring Mode**
+
+In this session, I'll:
+- Teach you the key concepts step by step
+- Ask you questions to test your understanding
+- Provide hands-on examples and exercises
+- Give you immediate feedback on your answers
+
+Let's start with the fundamentals. Are you ready to begin learning about ${moduleName}? 
+
+First, let me ask: What's your current experience level with CUDA programming?
+A) Complete beginner - I'm new to GPU programming
+B) Some basic knowledge - I understand the basics but need practice
+C) Intermediate level - I can write simple kernels
+D) Advanced - I'm looking to optimize and master techniques
+
+Please type your answer (A, B, C, or D) and I'll tailor the session to your level!`;
+
+    // Add the tutoring welcome message
+    const welcomeMessage = {
+      id: Date.now() + "_tutor_welcome",
+      role: "assistant",
+      content: tutoringPrompt,
+      timestamp: new Date().toISOString(),
+      tutoring: true,
+    };
+
+    setMessages([welcomeMessage]);
+
+    // Save the tutoring welcome message to database
+    await saveMessage(
+      chatId,
+      "assistant",
+      tutoringPrompt,
+      0
+    );
+  };
+
+  // Check if we're in tutoring mode for the current module
+  const isInTutoringMode = () => {
+    return tutoringMode && selectedModuleId;
+  };
+
+  // ==================== MODEL SELECTION FUNCTIONS ====================
 
   // Load model preference from localStorage
   useEffect(() => {
@@ -84,11 +247,6 @@ const CudaTutorApp = () => {
     
     // Save preference to localStorage
     localStorage.setItem('selectedModel', modelId);
-    
-    // You can add additional logic here such as:
-    // - Showing a notification to the user
-    // - Validating model availability
-    // - Updating any ongoing conversations
     
     console.log(`✅ Switched to ${getModelDisplayName(modelId)} model`);
   };
@@ -285,7 +443,12 @@ const CudaTutorApp = () => {
         setSplitPaneMode(false);
         setCodeEditorContent("");
         
-        // Clear model preference on logout - NEW
+        // Clear tutoring mode state on logout
+        setTutoringMode(false);
+        setTutoringChatId(null);
+        setOriginalChats([]);
+        
+        // Clear model preference on logout
         clearModelPreference();
       }
     } catch (error) {
@@ -367,7 +530,7 @@ const CudaTutorApp = () => {
 
       checkBackendStatus();
       
-      // Load available models when user is authenticated - NEW
+      // Load available models when user is authenticated
       loadAvailableModels();
 
       statusIntervalRef.current = setInterval(() => {
@@ -493,6 +656,7 @@ const CudaTutorApp = () => {
           messageId: msg.message_id,
           orderIndex: msg.order_index,
           performanceMetrics: performanceMetrics,
+          tutoring: msg.sender === "assistant" && msg.content.includes("tutoring") // Mark tutoring messages
         };
       });
 
@@ -539,7 +703,10 @@ const CudaTutorApp = () => {
         return null;
       }
 
-      setChats((prevChats) => [data, ...prevChats]);
+      // Only add to chats if not in tutoring mode
+      if (!tutoringMode) {
+        setChats((prevChats) => [data, ...prevChats]);
+      }
       setCurrentChatId(data.chat_id);
 
       console.log("New chat created for message:", data);
@@ -573,6 +740,9 @@ const CudaTutorApp = () => {
         console.log("Filtering chats by module_id:", filterModuleId);
       }
 
+      // Exclude tutoring sessions from regular chat list
+      query = query.neq("status", "tutoring");
+
       const { data, error } = await query.order("timestamp", {
         ascending: false,
       });
@@ -584,21 +754,28 @@ const CudaTutorApp = () => {
           console.warn(
             "Chats table does not exist. Please create it in Supabase first."
           );
-          setChats([]);
+          if (!tutoringMode) {
+            setChats([]);
+          }
           return;
         }
       } else {
-        setChats(data || []);
-        console.log(
-          "Loaded chats for module:",
-          filterModuleId,
-          "count:",
-          data?.length || 0
-        );
+        // Only update chats if not in tutoring mode
+        if (!tutoringMode) {
+          setChats(data || []);
+          console.log(
+            "Loaded chats for module:",
+            filterModuleId,
+            "count:",
+            data?.length || 0
+          );
+        }
       }
     } catch (error) {
       console.error("Error loading chats:", error);
-      setChats([]);
+      if (!tutoringMode) {
+        setChats([]);
+      }
     } finally {
       setLoadingChats(false);
     }
@@ -606,6 +783,12 @@ const CudaTutorApp = () => {
 
   const createNewChat = async () => {
     if (!user) return;
+
+    // Don't create regular chats in tutoring mode
+    if (tutoringMode) {
+      console.log("Cannot create regular chat in tutoring mode");
+      return;
+    }
 
     try {
       const newChat = {
@@ -687,17 +870,20 @@ const CudaTutorApp = () => {
       if (error) {
         console.error("Error updating chat heading:", error);
       } else {
-        setChats((prevChats) =>
-          prevChats.map((chat) =>
-            chat.chat_id === chatId
-              ? {
-                  ...chat,
-                  heading: heading,
-                  timestamp: new Date().toISOString(),
-                }
-              : chat
-          )
-        );
+        // Only update chats state if not in tutoring mode
+        if (!tutoringMode) {
+          setChats((prevChats) =>
+            prevChats.map((chat) =>
+              chat.chat_id === chatId
+                ? {
+                    ...chat,
+                    heading: heading,
+                    timestamp: new Date().toISOString(),
+                  }
+                : chat
+            )
+          );
+        }
         console.log("Chat heading updated:", heading);
       }
     } catch (error) {
@@ -707,11 +893,17 @@ const CudaTutorApp = () => {
 
   const handleSelectModule = async (moduleId) => {
     console.log("Module selected:", moduleId);
+    
+    // If switching modules while in tutoring mode, exit tutoring mode first
+    if (tutoringMode && selectedModuleId !== moduleId) {
+      await toggleTutoringMode(); // This will exit tutoring mode
+    }
+    
     setSelectedModuleId(moduleId);
 
     handleMobileItemSelect();
 
-    if (currentChatId) {
+    if (currentChatId && !tutoringMode) {
       const currentChat = chats.find((chat) => chat.chat_id === currentChatId);
       if (currentChat && currentChat.module_id !== moduleId) {
         setCurrentChatId(null);
@@ -724,6 +916,11 @@ const CudaTutorApp = () => {
   };
 
   const navigateToWelcome = () => {
+    // If in tutoring mode, exit it first
+    if (tutoringMode) {
+      toggleTutoringMode();
+    }
+    
     setCurrentView("welcome");
     setCurrentChatId(null);
     setMessages([]);
@@ -767,11 +964,15 @@ const CudaTutorApp = () => {
   }, [selectedModuleId, user]);
 
   // ==================== MESSAGE HANDLING FUNCTIONS ====================
-
-  const sendMessage = async (message) => {
-    console.log("Sending message:", message, "using model:", selectedModel);
+const sendMessage = async (message) => {
+    console.log("Sending message:", message, "using model:", selectedModel, "tutoring mode:", tutoringMode);
     let chatId = currentChatId;
     let orderIndex = messages.length;
+
+    // Handle tutoring mode messages
+    if (tutoringMode && tutoringChatId) {
+      chatId = tutoringChatId;
+    }
 
     // ========== SPECIAL HANDLING FOR QUIZ FEEDBACK ==========
     if (message.startsWith("QUIZ_FEEDBACK:")) {
@@ -789,6 +990,7 @@ const CudaTutorApp = () => {
           content: "", // Empty content since we're using quizEvaluation
           quizEvaluation: evaluation, // This will trigger QuizFeedback component
           timestamp: new Date().toISOString(),
+          tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
         };
 
         // Add feedback message to chat
@@ -819,8 +1021,8 @@ const CudaTutorApp = () => {
 
     // ========== REGULAR MESSAGE HANDLING ==========
 
-    // Create new chat if needed
-    if (!chatId) {
+    // Create new chat if needed (but not in tutoring mode - tutoring chat already exists)
+    if (!chatId && !tutoringMode) {
       console.log("No current chat, creating new chat...");
       const newChat = await createNewChatForMessage(message);
       if (!newChat) {
@@ -837,6 +1039,7 @@ const CudaTutorApp = () => {
       role: "user",
       content: message,
       timestamp: new Date().toISOString(),
+      tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -854,12 +1057,12 @@ const CudaTutorApp = () => {
       console.log("User message saved to database");
     }
 
-    // Update chat title if this is the first message
-    if (orderIndex === 0) {
+    // Update chat title if this is the first message and not in tutoring mode
+    if (orderIndex === 0 && !tutoringMode) {
       await updateChatTitle(chatId, message);
     }
 
-    // Send message to backend with selected model - UPDATED
+    // Send message to backend with selected model and enhanced tutoring context
     try {
       const requestBody = {
         message: message,
@@ -868,6 +1071,7 @@ const CudaTutorApp = () => {
         module_id: selectedModuleId,
         model: selectedModel, // Include selected model
         stream: false,
+        tutoring_mode: tutoringMode, // NEW: Include tutoring mode flag
       };
 
       console.log("Sending request to backend:", requestBody);
@@ -897,12 +1101,17 @@ const CudaTutorApp = () => {
         performanceMetrics: data.performance_metrics || null,
         modelUsed: data.model_used || selectedModel, // Track which model was used
         modelName: data.model_name || getModelDisplayName(selectedModel),
+        tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Log model usage
-      console.log(`✅ Response generated using ${assistantMessage.modelName} (${assistantMessage.modelUsed})`);
+      // Log model usage and tutoring context
+      if (tutoringMode) {
+        console.log(`🎓 Tutoring response generated using ${assistantMessage.modelName} for ${MODULE_TO_COURSE[selectedModuleId] || 'module'}`);
+      } else {
+        console.log(`✅ Response generated using ${assistantMessage.modelName} (${assistantMessage.modelUsed})`);
+      }
 
       // Save assistant message to database
       const savedAssistantMessage = await saveMessage(
@@ -924,6 +1133,7 @@ const CudaTutorApp = () => {
         content: `Sorry, I encountered an error: ${error.message}. Please check if the backend is running and try again.`,
         timestamp: new Date().toISOString(),
         isError: true,
+        tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
       };
 
       setMessages((prev) => [...prev, errorMessage]);
@@ -1005,6 +1215,8 @@ const CudaTutorApp = () => {
           onSelectModule={handleSelectModule}
           selectedModuleId={selectedModuleId}
           isMobile={isMobile}
+          tutoringMode={tutoringMode} // NEW: Pass tutoring mode state
+          onToggleTutoringMode={toggleTutoringMode} // NEW: Pass tutoring mode toggle function
         />
       </div>
 
@@ -1025,6 +1237,7 @@ const CudaTutorApp = () => {
           onLogout={handleLogout}
           selectedModel={selectedModel}
           onModelChange={handleModelChange}
+          tutoringMode={tutoringMode} // NEW: Pass tutoring mode state
         />
 
         {splitPaneMode ? (
@@ -1042,6 +1255,7 @@ const CudaTutorApp = () => {
                   onSendMessage={sendMessage}
                   onOpenCodeEditor={handleOpenCodeEditor}
                   splitPaneMode={true}
+                  tutoringMode={tutoringMode} // NEW: Pass tutoring mode state
                 />
               )
             }
@@ -1069,6 +1283,7 @@ const CudaTutorApp = () => {
                 onSendMessage={sendMessage}
                 onOpenCodeEditor={handleOpenCodeEditor}
                 splitPaneMode={false}
+                tutoringMode={tutoringMode} // NEW: Pass tutoring mode state
               />
             )}
           </>

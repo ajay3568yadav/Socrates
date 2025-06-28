@@ -1,4 +1,4 @@
-/* ChatView.css - Updated for centered chat layout with constrained width */
+/* ChatView.css - Updated for centered chat layout with tutoring mode support */
 .chat-view {
   flex: 1;
   display: flex;
@@ -12,6 +12,124 @@
 .chat-view.split-pane-mode {
   border-right: 1px solid #30363d;
   background: #0d1117;
+}
+
+/* NEW: Tutoring mode styling */
+.chat-view.tutoring-mode {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.02) 0%, #111111 100%);
+}
+
+/* NEW: Tutoring Header */
+.tutoring-header {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 12px 24px;
+  flex-shrink: 0;
+}
+
+.tutoring-header-content {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tutoring-header .tutoring-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.tutoring-header .tutoring-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tutoring-header .tutoring-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b82f6;
+  margin-bottom: 2px;
+}
+
+.tutoring-header .tutoring-subtitle {
+  font-size: 12px;
+  color: #888888;
+}
+
+.tutoring-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.tutoring-badge-dot {
+  width: 6px;
+  height: 6px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+/* NEW: Tutoring Welcome Message */
+.tutoring-welcome {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02));
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.tutoring-welcome-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.tutoring-welcome-content h3 {
+  color: #3b82f6;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.tutoring-welcome-content p {
+  color: #cccccc;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tutoring-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #aaaaaa;
+  text-align: left;
+}
+
+.tip-icon {
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 .messages-container {
@@ -47,6 +165,10 @@
   margin: 0 auto !important;
 }
 
+.chat-view.tutoring-mode .messages-wrapper {
+  max-width: 900px !important; /* Slightly wider for tutoring mode */
+}
+
 /* Individual message containers with proper alignment */
 .messages-wrapper > .message {
   width: 100%;
@@ -73,6 +195,20 @@
 
 .messages-wrapper > .message.user + .message.assistant {
   margin-top: 20px;
+}
+
+/* NEW: Special styling for tutoring messages */
+.chat-view.tutoring-mode .message.assistant {
+  border-left: 3px solid rgba(59, 130, 246, 0.3);
+  padding-left: 16px;
+  margin-left: -19px;
+}
+
+.chat-view.tutoring-mode .message.assistant .message-content {
+  background: rgba(59, 130, 246, 0.02);
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 /* Scroll to bottom button - centered */
@@ -116,6 +252,14 @@
   font-size: 14px;
 }
 
+.chat-view.tutoring-mode .scroll-to-bottom-btn {
+  background: #3b82f6;
+}
+
+.chat-view.tutoring-mode .scroll-to-bottom-btn:hover {
+  background: #2563eb;
+}
+
 /* Chat Input Wrapper */
 .chat-input-wrapper {
   flex-shrink: 0;
@@ -127,6 +271,11 @@
 .chat-view.split-pane-mode .chat-input-wrapper {
   background: #0d1117;
   border-top: none; /* Remove the horizontal line */
+}
+
+.chat-view.tutoring-mode .chat-input-wrapper {
+  background: linear-gradient(180deg, transparent 0%, rgba(59, 130, 246, 0.02) 100%);
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 /* Constrain chat input to match messages width */
@@ -143,6 +292,10 @@
   padding: 0 20px;
 }
 
+.chat-view.tutoring-mode .chat-input-wrapper > * {
+  max-width: 900px !important;
+}
+
 /* Special styling for continuous conversation flow */
 .messages-wrapper > .message.assistant:not(:first-child) {
   border-top: 1px solid rgba(48, 54, 61, 0.3);
@@ -152,18 +305,6 @@
 .messages-wrapper > .message.assistant:first-child {
   padding-top: 0;
 }
-
-/* REMOVED PROBLEMATIC HOVER EFFECTS - This was causing text wrapping */
-/* 
-.message.assistant:hover {
-  background: rgba(22, 27, 34, 0.3);
-  transition: background-color 0.2s ease;
-  border-radius: 8px;
-  margin: 0 -12px;
-  padding-left: 12px;
-  padding-right: 12px;
-}
-*/
 
 /* Keep basic transition but no layout changes */
 .message.assistant {
@@ -176,7 +317,10 @@
 .message.assistant:hover {
   background: rgba(22, 27, 34, 0.2);
   transition: background-color 0.2s ease;
-  /* NO margin/padding changes that cause text wrapping */
+}
+
+.chat-view.tutoring-mode .message.assistant:hover {
+  background: rgba(59, 130, 246, 0.03);
 }
 
 /* Better visual separation between different conversation turns */
@@ -192,6 +336,10 @@
   border-top: none;
 }
 
+.chat-view.tutoring-mode .message.assistant + .message.assistant {
+  border-top: 1px solid rgba(59, 130, 246, 0.2);
+}
+
 /* Typography improvements for better readability */
 .messages-wrapper {
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
@@ -205,6 +353,57 @@
     border-right: none;
   }
   
+  .tutoring-header {
+    padding: 10px 16px;
+  }
+  
+  .tutoring-header-content {
+    gap: 10px;
+  }
+  
+  .tutoring-header .tutoring-icon {
+    font-size: 20px;
+  }
+  
+  .tutoring-header .tutoring-title {
+    font-size: 13px;
+  }
+  
+  .tutoring-header .tutoring-subtitle {
+    font-size: 11px;
+  }
+  
+  .tutoring-badge {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+  
+  .tutoring-welcome {
+    padding: 20px 16px;
+    margin: 16px 0;
+  }
+  
+  .tutoring-welcome-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+  
+  .tutoring-welcome-content h3 {
+    font-size: 16px;
+  }
+  
+  .tutoring-welcome-content p {
+    font-size: 13px;
+  }
+  
+  .tip-item {
+    font-size: 12px;
+  }
+  
+  .tip-icon {
+    font-size: 14px;
+  }
+  
   .messages-wrapper {
     padding: 16px 16px 32px 16px;
     max-width: none; /* Full width on mobile */
@@ -215,12 +414,22 @@
     max-width: none;
   }
   
+  .chat-view.tutoring-mode .messages-wrapper {
+    max-width: none;
+    padding: 16px 16px 32px 16px;
+  }
+  
   .chat-input-wrapper > * {
     padding: 0 16px;
     max-width: none;
   }
   
   .chat-view.split-pane-mode .chat-input-wrapper > * {
+    padding: 0 16px;
+    max-width: none;
+  }
+  
+  .chat-view.tutoring-mode .chat-input-wrapper > * {
     padding: 0 16px;
     max-width: none;
   }
@@ -235,6 +444,15 @@
   
   .messages-wrapper > .message.assistant + .message.assistant {
     padding-top: 20px;
+  }
+  
+  .chat-view.tutoring-mode .message.assistant {
+    margin-left: -12px;
+    padding-left: 12px;
+  }
+  
+  .chat-view.tutoring-mode .message.assistant .message-content {
+    padding: 12px;
   }
   
   .scroll-to-bottom-btn {
@@ -263,6 +481,14 @@
   .message.user .message-content {
     max-width: 90%;
   }
+  
+  .tutoring-welcome {
+    padding: 16px 12px;
+  }
+  
+  .tutoring-tips {
+    gap: 6px;
+  }
 }
 
 /* Tablet responsiveness */
@@ -276,6 +502,10 @@
     max-width: 800px;
   }
   
+  .chat-view.tutoring-mode .messages-wrapper {
+    max-width: 1000px;
+  }
+  
   .chat-input-wrapper > * {
     max-width: 900px;
     padding: 0 20px;
@@ -283,6 +513,10 @@
   
   .chat-view.split-pane-mode .chat-input-wrapper > * {
     max-width: 800px;
+  }
+  
+  .chat-view.tutoring-mode .chat-input-wrapper > * {
+    max-width: 1000px;
   }
 }
 
@@ -297,12 +531,20 @@
     max-width: 1200px;
   }
   
+  .chat-view.tutoring-mode .messages-wrapper {
+    max-width: 1200px;
+  }
+  
   .chat-input-wrapper > * {
     max-width: 1400px;
     padding: 0 32px;
   }
   
   .chat-view.split-pane-mode .chat-input-wrapper > * {
+    max-width: 1200px;
+  }
+  
+  .chat-view.tutoring-mode .chat-input-wrapper > * {
     max-width: 1200px;
   }
 }
@@ -333,10 +575,22 @@
   background: #484f58;
 }
 
+.chat-view.tutoring-mode .messages-container::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.chat-view.tutoring-mode .messages-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
 /* Focus states for accessibility */
 .scroll-to-bottom-btn:focus {
   outline: 2px solid #22c55e;
   outline-offset: 2px;
+}
+
+.chat-view.tutoring-mode .scroll-to-bottom-btn:focus {
+  outline-color: #3b82f6;
 }
 
 /* Performance optimizations */
@@ -362,7 +616,49 @@
     border: 2px solid #22c55e;
   }
   
+  .chat-view.tutoring-mode .scroll-to-bottom-btn {
+    border-color: #3b82f6;
+  }
+  
   .message.user .message-content {
     border-color: #718096;
   }
+  
+  .tutoring-header,
+  .tutoring-welcome,
+  .tutoring-badge {
+    border-color: #3b82f6 !important;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-to-bottom-btn,
+  .tutoring-badge-dot,
+  .message.assistant {
+    transition: none;
+    animation: none;
+  }
+  
+  .scroll-to-bottom-btn:hover {
+    transform: translateX(-50%);
+  }
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { 
+    opacity: 1; 
+  }
+  50% { 
+    opacity: 0.5; 
+  }
+}
+
+/* Dark theme enhancements for tutoring mode */
+.chat-view.tutoring-mode {
+  --tutoring-primary: #3b82f6;
+  --tutoring-secondary: rgba(59, 130, 246, 0.1);
+  --tutoring-border: rgba(59, 130, 246, 0.2);
+  --tutoring-text: #3b82f6;
 }

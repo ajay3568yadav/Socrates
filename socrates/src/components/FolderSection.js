@@ -10,6 +10,8 @@ const FolderSection = ({
   selectedModuleId,
   onStartModule,
   sessionId,
+  tutoringMode, // NEW: Tutoring mode state
+  onToggleTutoringMode, // NEW: Toggle tutoring mode function
 }) => {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +173,17 @@ const FolderSection = ({
     }
   };
 
+  // NEW: Handle tutoring mode toggle
+  const handleTutoringToggle = () => {
+    if (!selectedModuleId) {
+      console.warn("No module selected for tutoring mode");
+      return;
+    }
+    if (onToggleTutoringMode) {
+      onToggleTutoringMode();
+    }
+  };
+
   // Get appropriate icon based on module name
   const getModuleIcon = (moduleName) => {
     const name = moduleName.toLowerCase();
@@ -287,7 +300,7 @@ const FolderSection = ({
               key={module.module_id}
               className={`module-item ${
                 selectedModuleId === module.module_id ? "active" : ""
-              }`}
+              } ${tutoringMode && selectedModuleId === module.module_id ? "tutoring" : ""}`}
               onClick={() => handleModuleClick(module.module_id)}
               title={`Click to view ${module.module_name} chats`}
             >
@@ -296,6 +309,9 @@ const FolderSection = ({
               </div>
               <div className="module-content">
                 <div className="module-name">{module.module_name}</div>
+                {tutoringMode && selectedModuleId === module.module_id && (
+                  <div className="tutoring-indicator">🎓 Active Tutoring</div>
+                )}
               </div>
               <div className="module-status">
                 <div className={`status-icon ${module.status}`}>
@@ -315,8 +331,39 @@ const FolderSection = ({
         </div>
       )}
 
-      {/* Course Information Section */}
+      {/* NEW: Tutoring Mode Toggle Button */}
       {selectedModuleId && (
+        <div className="tutoring-section">
+          <button
+            className={`tutoring-toggle-btn ${tutoringMode ? 'active' : ''}`}
+            onClick={handleTutoringToggle}
+            title={tutoringMode ? 'Exit Tutoring Mode' : 'Start Interactive Tutoring'}
+          >
+            <div className="tutoring-btn-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 12v5c3 0 5-1 8-1s5 1 8 1v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="tutoring-btn-content">
+              <div className="tutoring-btn-title">
+                {tutoringMode ? 'Exit Tutoring' : 'Start Tutoring'}
+              </div>
+              <div className="tutoring-btn-subtitle">
+                {tutoringMode ? 'Return to normal mode' : `Interactive learning for ${MODULE_TO_COURSE[selectedModuleId] || 'this module'}`}
+              </div>
+            </div>
+            {tutoringMode && (
+              <div className="tutoring-active-indicator">
+                <div className="pulsing-dot"></div>
+              </div>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Course Information Section */}
+      {selectedModuleId && !tutoringMode && (
         <div className="course-info-section">
           <div className="section-header">
             <span>Course Details</span>

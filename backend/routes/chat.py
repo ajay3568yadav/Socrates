@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chat and conversation routes for CUDA Tutor with Model Selection
+Chat and conversation routes for CUDA Tutor with Enhanced Tutoring Mode Support
 """
 
 import time
@@ -17,7 +17,7 @@ MODEL_CONFIGS = {
         'max_tokens': 4096,
         'temperature': 0.7,
         'description': 'Advanced reasoning model optimized for complex problem solving',
-        'fallback': 'llama3.2:latest'  # Fallback if main model not available
+        'fallback': 'llama3.2:latest'
     },
     'qwen-2.5': {
         'name': 'Qwen 2.5',
@@ -41,7 +41,7 @@ MODEL_CONFIGS = {
         'max_tokens': 4096,
         'temperature': 0.7,
         'description': 'Meta\'s latest open-source language model',
-        'fallback': None  # This is our fallback model
+        'fallback': None
     }
 }
 
@@ -55,7 +55,7 @@ def create_chat_blueprint(rag_system):
     
     @bp.route('/chat', methods=['POST', 'OPTIONS'])
     def chat():
-        """Main chat endpoint with conversation context and model selection"""
+        """Main chat endpoint with conversation context and enhanced tutoring mode support"""
         # Handle preflight CORS request
         if request.method == 'OPTIONS':
             return '', 200
@@ -69,6 +69,8 @@ def create_chat_blueprint(rag_system):
             session_id = data.get('session_id', 'default')
             selected_model = data.get('model', DEFAULT_MODEL)
             stream = data.get('stream', False)
+            tutoring_mode = data.get('tutoring_mode', False)  # NEW: Tutoring mode flag
+            module_id = data.get('module_id')
             
             if not message:
                 return jsonify({'error': 'No message provided'}), 400
@@ -79,7 +81,7 @@ def create_chat_blueprint(rag_system):
                 selected_model = DEFAULT_MODEL
             
             model_config = MODEL_CONFIGS[selected_model]
-            print(f"💬 Session {session_id}: {message} (Model: {model_config['name']})")
+            print(f"💬 Session {session_id}: {message} (Model: {model_config['name']}, Tutoring: {tutoring_mode})")
             
             # Start performance tracking
             start_time = time.time()
@@ -88,14 +90,35 @@ def create_chat_blueprint(rag_system):
             conversation_context = session_manager.get_conversation_context(session_id)
             is_follow_up = session_manager.detect_follow_up_question(message)
             
-            # Generate response with selected model
-            if rag_system:
-                response = rag_system.generate_response_with_model(
+            # NEW: Enhanced prompt generation for tutoring mode
+            if tutoring_mode:
+                enhanced_message = _create_tutoring_context_message(
                     message, 
                     conversation_context, 
-                    model_config,
-                    stream=stream
+                    module_id,
+                    model_config
                 )
+            else:
+                enhanced_message = message
+            
+            # Generate response with selected model
+            if rag_system:
+                if tutoring_mode:
+                    # Use enhanced tutoring message with full context
+                    response = rag_system.generate_response_with_model(
+                        enhanced_message, 
+                        "",  # Don't use regular conversation context for tutoring
+                        model_config,
+                        stream=stream
+                    )
+                else:
+                    # Regular chat mode
+                    response = rag_system.generate_response_with_model(
+                        message, 
+                        conversation_context, 
+                        model_config,
+                        stream=stream
+                    )
             else:
                 response = _get_fallback_response(model_config['name'])
             
@@ -117,6 +140,7 @@ def create_chat_blueprint(rag_system):
             
             print(f"✅ Session {session_id}: Generated response using {model_config['name']} ({len(response)} chars)")
             print(f"🔗 Follow-up detected: {is_follow_up}")
+            print(f"🎓 Tutoring mode: {tutoring_mode}")
             
             # Print enhanced system usage with GPU stats
             performance_tracker.print_enhanced_system_usage(performance_data)
@@ -128,6 +152,7 @@ def create_chat_blueprint(rag_system):
                 'model_name': model_config['name'],
                 'is_follow_up': is_follow_up,
                 'context_used': bool(conversation_context),
+                'tutoring_mode': tutoring_mode,
                 'performance_metrics': {
                     'response_time_seconds': performance_data['response_time_seconds'],
                     'prompt_length': performance_data['prompt_length'],
@@ -145,6 +170,76 @@ def create_chat_blueprint(rag_system):
                 'error': str(e),
                 'status': 'error'
             }), 500
+    
+    def _create_tutoring_context_message(message, conversation_context, module_id, model_config):
+        """Create enhanced message with tutoring context"""
+        
+        # Module information
+        module_info = {
+            "c801ac6c-1232-4c96-89b1-c4eadf41026c": {
+                "name": "CUDA Basics",
+                "topics": ["CUDA Architecture", "Thread Hierarchy", "Memory Model", "Basic Kernels", "GPU vs CPU"],
+                "level": "Beginner"
+            },
+            "d26ccd91-cdf9-45e3-990f-a484d764bb9d": {
+                "name": "Memory Optimization",
+                "topics": ["Global Memory", "Shared Memory", "Memory Coalescing", "Memory Banks", "Texture Memory"],
+                "level": "Intermediate"
+            },
+            "ff7d63fc-8646-4d9a-be5d-41a249beff02": {
+                "name": "Kernel Development",
+                "topics": ["Kernel Launch", "Thread Synchronization", "Performance Optimization", "Error Handling"],
+                "level": "Intermediate"
+            },
+            "22107ce-5027-42bf-9941-6d00117da9ae": {
+                "name": "Performance Tuning",
+                "topics": ["Profiling", "Occupancy", "Memory Bandwidth", "Instruction Optimization", "Advanced Techniques"],
+                "level": "Advanced"
+            }
+        }
+        
+        current_module = module_info.get(module_id, {
+            "name": "CUDA Programming",
+            "topics": ["General CUDA Concepts"],
+            "level": "Intermediate"
+        })
+        
+        # Create comprehensive tutoring context
+        tutoring_context = f"""
+You are an expert CUDA programming tutor conducting an interactive tutoring session. 
+
+**CURRENT SESSION CONTEXT:**
+- Module: {current_module['name']} ({current_module['level']} level)
+- Topics: {', '.join(current_module['topics'])}
+- Mode: Interactive Teaching with Questions & Feedback
+- Model: {model_config['name']}
+
+**YOUR ROLE AS TUTOR:**
+1. Teach concepts step-by-step with clear explanations
+2. Ask questions to test understanding 
+3. Provide immediate feedback on answers
+4. Give practical examples and code samples
+5. Adapt to the student's responses and learning pace
+6. Encourage questions and provide clarifications
+
+**CONVERSATION HISTORY:**
+{conversation_context if conversation_context else "This is the beginning of the tutoring session."}
+
+**TEACHING GUIDELINES:**
+- Keep explanations clear and progressive
+- Use analogies to explain complex concepts
+- Provide code examples when helpful
+- Ask follow-up questions to ensure understanding
+- Be encouraging and supportive
+- Connect concepts to real-world applications
+
+**STUDENT'S CURRENT MESSAGE:**
+{message}
+
+Respond as an expert tutor, maintaining the interactive learning flow. If this is a response to a previous question, acknowledge their answer and provide feedback before moving forward.
+"""
+        
+        return tutoring_context
     
     @bp.route('/models', methods=['GET'])
     def get_available_models():

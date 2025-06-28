@@ -9,7 +9,8 @@ const ChatView = ({
   isLoading, 
   onSendMessage, 
   onOpenCodeEditor,
-  splitPaneMode = false
+  splitPaneMode = false,
+  tutoringMode = false // NEW: Tutoring mode prop
 }) => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -57,13 +58,59 @@ const ChatView = ({
   }, []);
 
   return (
-    <div className={`chat-view ${splitPaneMode ? 'split-pane-mode' : ''}`}>
+    <div className={`chat-view ${splitPaneMode ? 'split-pane-mode' : ''} ${tutoringMode ? 'tutoring-mode' : ''}`}>
+      {/* NEW: Tutoring Mode Header */}
+      {tutoringMode && (
+        <div className="tutoring-header">
+          <div className="tutoring-header-content">
+            <div className="tutoring-icon">🎓</div>
+            <div className="tutoring-info">
+              <div className="tutoring-title">Interactive Tutoring Session</div>
+              <div className="tutoring-subtitle">Your AI tutor will guide you step by step</div>
+            </div>
+            <div className="tutoring-badge">
+              <div className="tutoring-badge-dot"></div>
+              <span>Live</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         className="messages-container" 
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
         <div className="messages-wrapper">
+          {/* NEW: Tutoring mode welcome message */}
+          {tutoringMode && messages.length === 0 && (
+            <div className="tutoring-welcome">
+              <div className="tutoring-welcome-icon">🎓</div>
+              <div className="tutoring-welcome-content">
+                <h3>Welcome to Tutoring Mode!</h3>
+                <p>
+                  Your AI tutor will guide you through interactive learning with questions, 
+                  explanations, and hands-on exercises. Feel free to ask questions or 
+                  request clarification at any time.
+                </p>
+                <div className="tutoring-tips">
+                  <div className="tip-item">
+                    <span className="tip-icon">💡</span>
+                    <span>Ask for examples and detailed explanations</span>
+                  </div>
+                  <div className="tip-item">
+                    <span className="tip-icon">❓</span>
+                    <span>Answer questions to test your understanding</span>
+                  </div>
+                  <div className="tip-item">
+                    <span className="tip-icon">🧪</span>
+                    <span>Practice with code examples and exercises</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {messages.map((message) => (
             <Message 
               key={message.id} 
@@ -72,10 +119,11 @@ const ChatView = ({
               isLoading={isLoading}
               onOpenCodeEditor={onOpenCodeEditor}
               splitPaneMode={splitPaneMode}
+              tutoringMode={tutoringMode} // NEW: Pass tutoring mode to messages
             />
           ))}
           
-          {isLoading && <TypingIndicator />}
+          {isLoading && <TypingIndicator splitPaneMode={splitPaneMode} tutoringMode={tutoringMode} />}
           <div ref={messagesEndRef} style={{ height: '1px', marginTop: '20px' }} />
         </div>
         
@@ -97,6 +145,7 @@ const ChatView = ({
           onSendMessage={onSendMessage} 
           isLoading={isLoading}
           splitPaneMode={splitPaneMode}
+          tutoringMode={tutoringMode} // NEW: Pass tutoring mode to input
         />
       </div>
     </div>

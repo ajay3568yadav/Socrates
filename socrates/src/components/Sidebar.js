@@ -19,6 +19,8 @@ const Sidebar = ({
   selectedModuleId,
   user,
   onLogout,
+  tutoringMode, // NEW: Tutoring mode state
+  onToggleTutoringMode, // NEW: Toggle tutoring mode function
 }) => {
   // Get sidebar CSS classes
   const getSidebarClass = () => {
@@ -55,6 +57,26 @@ const Sidebar = ({
     return user.email.charAt(0).toUpperCase();
   };
 
+  // Get module name for tutoring mode display
+  const getModuleName = () => {
+    const moduleNames = {
+      "c801ac6c-1232-4c96-89b1-c4eadf41026c": "CUDA Basics",
+      "d26ccd91-cdf9-45e3-990f-a484d764bb9d": "Memory Optimization",
+      "ff7d63fc-8646-4d9a-be5d-41a249beff02": "Kernel Development",
+      "22107ce-5027-42bf-9941-6d00117da9ae": "Performance Tuning",
+    };
+    return moduleNames[selectedModuleId] || "CUDA Module";
+  };
+
+  // Handle tutoring mode toggle
+  const handleTutoringToggle = () => {
+    if (!selectedModuleId) {
+      console.warn("No module selected for tutoring mode");
+      return;
+    }
+    onToggleTutoringMode();
+  };
+
   // Collapsed navigation for desktop
   const renderCollapsedNav = () => (
     <div className="collapsed-nav">
@@ -80,6 +102,20 @@ const Sidebar = ({
           <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke="currentColor" strokeWidth="2"/>
         </svg>
       </button>
+      
+      {/* Tutoring Mode Toggle */}
+      {selectedModuleId && (
+        <button
+          className={`collapsed-item tutoring-toggle ${tutoringMode ? 'active' : ''}`}
+          onClick={handleTutoringToggle}
+          title={tutoringMode ? `Exit Tutoring: ${getModuleName()}` : `Start Tutoring: ${getModuleName()}`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="currentColor" strokeWidth="2"/>
+            <path d="M6 12v5c3 0 5-1 8-1s5 1 8 1v-5" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        </button>
+      )}
       
       {/* Chats */}
       <button
@@ -117,6 +153,7 @@ const Sidebar = ({
         className="collapsed-new-chat"
         onClick={onNewChat}
         title="New Chat"
+        disabled={tutoringMode}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2"/>
@@ -147,13 +184,41 @@ const Sidebar = ({
         renderCollapsedNav()
       ) : (
         <>
+          {/* Tutoring Mode Banner */}
+          {tutoringMode && (
+            <div className="tutoring-banner">
+              <div className="tutoring-banner-content">
+                <div className="tutoring-icon">🎓</div>
+                <div className="tutoring-info">
+                  <div className="tutoring-title">Tutoring Mode</div>
+                  <div className="tutoring-module">{getModuleName()}</div>
+                </div>
+                <button 
+                  className="exit-tutoring-btn"
+                  onClick={handleTutoringToggle}
+                  title="Exit Tutoring Mode"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2"/>
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* New Chat Button */}
           <div className="new-chat-section">
-            <button className="new-chat-btn" onClick={onNewChat}>
+            <button 
+              className="new-chat-btn" 
+              onClick={onNewChat}
+              disabled={tutoringMode}
+              title={tutoringMode ? "Exit tutoring mode to create new chats" : "Create new chat"}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z" stroke="currentColor" strokeWidth="2"/>
               </svg>
-              <span>New chat</span>
+              <span>{tutoringMode ? "Tutoring Active" : "New chat"}</span>
             </button>
           </div>
 
@@ -166,8 +231,9 @@ const Sidebar = ({
               </svg>
               <input
                 type="text"
-                placeholder="Search chats"
+                placeholder={tutoringMode ? "Tutoring mode active" : "Search chats"}
                 className="search-input"
+                disabled={tutoringMode}
               />
             </div>
           </div>
@@ -177,14 +243,77 @@ const Sidebar = ({
             <FolderSection
               onSelectModule={onSelectModule}
               selectedModuleId={selectedModuleId}
+              tutoringMode={tutoringMode} // NEW: Pass tutoring mode state
+              onToggleTutoringMode={onToggleTutoringMode} // NEW: Pass toggle function
             />
-            <ChatsSection
-              chats={chats}
-              loadingChats={loadingChats}
-              currentChatId={currentChatId}
-              onSelectChat={onSelectChat}
-              selectedModuleId={selectedModuleId}
-            />
+            
+            {/* Only show chats section when not in tutoring mode */}
+            {!tutoringMode && (
+              <ChatsSection
+                chats={chats}
+                loadingChats={loadingChats}
+                currentChatId={currentChatId}
+                onSelectChat={onSelectChat}
+                selectedModuleId={selectedModuleId}
+              />
+            )}
+
+            {/* Tutoring Mode Info */}
+            {tutoringMode && (
+              <div className="tutoring-info-section">
+                <div className="section-header">
+                  <div className="section-title">
+                    <svg className="section-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M6 12v5c3 0 5-1 8-1s5 1 8 1v-5" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                    <span>Active Session</span>
+                  </div>
+                </div>
+                <div className="tutoring-session-info">
+                  <div className="session-item">
+                    <div className="session-icon">📚</div>
+                    <div className="session-details">
+                      <div className="session-title">Interactive Learning</div>
+                      <div className="session-description">
+                        Your AI tutor will guide you through {getModuleName()} with questions and explanations
+                      </div>
+                    </div>
+                  </div>
+                  <div className="session-item">
+                    <div className="session-icon">💬</div>
+                    <div className="session-details">
+                      <div className="session-title">Ask Questions</div>
+                      <div className="session-description">
+                        Feel free to ask for clarification or additional examples
+                      </div>
+                    </div>
+                  </div>
+                  <div className="session-item">
+                    <div className="session-icon">🧪</div>
+                    <div className="session-details">
+                      <div className="session-title">Practice & Feedback</div>
+                      <div className="session-description">
+                        Answer questions and receive immediate feedback
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="tutoring-actions">
+                  <button 
+                    className="exit-tutoring-full-btn"
+                    onClick={handleTutoringToggle}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" strokeWidth="2"/>
+                      <polyline points="16,17 21,12 16,7" stroke="currentColor" strokeWidth="2"/>
+                      <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                    Exit Tutoring Mode
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

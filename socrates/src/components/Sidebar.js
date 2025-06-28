@@ -16,6 +16,8 @@ const Sidebar = ({
   onRefreshBackend,
   onSelectModule,
   selectedModuleId,
+  onStartModule,
+  sessionId,
 }) => {
   const sidebarClass = `sidebar ${isOpen ? "mobile-visible" : "mobile-hidden"}`;
 
@@ -79,6 +81,8 @@ const Sidebar = ({
         <FolderSection
           onSelectModule={onSelectModule}
           selectedModuleId={selectedModuleId}
+          onStartModule={onStartModule}
+          sessionId={sessionId}
         />
         <ChatsSection
           chats={chats}

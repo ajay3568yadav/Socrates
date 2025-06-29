@@ -5,7 +5,15 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import Quiz from './Quiz';
 import QuizFeedback from './QuizFeedback';
 
-const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPaneMode = false }) => {
+const Message = ({ 
+  message, 
+  onSendMessage, 
+  isLoading, 
+  onOpenCodeEditor, 
+  splitPaneMode = false,
+  tutoringMode = false,
+  currentChatId // ADD THIS PARAMETER
+}) => {
   const isUser = message.role === 'user';
   const messageRef = useRef(null);
   const codeBlocksRef = useRef([]);
@@ -226,48 +234,62 @@ const Message = ({ message, onSendMessage, isLoading, onOpenCodeEditor, splitPan
     return processed;
   };
 
-  // Quiz submission handler
-  const handleQuizSubmit = async (quizData, userAnswers) => {
-    console.log('Quiz submission started:', { quizData, userAnswers });
+// BEST SOLUTION: Updated handleQuizSubmit function in Message.js
+
+const handleQuizSubmit = async (quizData, userAnswers) => {
+  console.log('Quiz submission started:', { quizData, userAnswers });
+  
+  if (!onSendMessage) {
+    console.error('onSendMessage not available');
+    return;
+  }
+
+  try {
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
     
-    if (!onSendMessage) {
-      console.error('onSendMessage not available');
-      return;
+    const requestBody = {
+      quiz_data: quizData,
+      user_answers: userAnswers,
+      session_id: 'current_session',
+      chat_id: currentChatId,
+      tutoring_mode: tutoringMode
+    };
+    
+    const response = await fetch(`${API_BASE_URL}/api/evaluate-quiz`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+    const data = await response.json();
+    console.log('Quiz evaluation response:', data);
+    
+    if (data.success && data.evaluation) {
+      // Send the quiz feedback (this will render as QuizFeedback component)
+      const feedbackText = `QUIZ_FEEDBACK:${JSON.stringify(data.evaluation)}`;
+      onSendMessage(feedbackText);
       
-      const response = await fetch(`${API_BASE_URL}/api/evaluate-quiz`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          quiz_data: quizData,
-          user_answers: userAnswers,
-          session_id: 'current_session'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // FIXED: If there's AI analysis, send it as a special AI_ANALYSIS message
+      if (data.ai_analysis && tutoringMode) {
+        setTimeout(() => {
+          // Send AI analysis with special prefix so it gets handled as assistant message
+          const analysisText = `AI_ANALYSIS:${data.ai_analysis}`;
+          onSendMessage(analysisText);
+        }, 1500); // Small delay so feedback appears first
       }
-
-      const data = await response.json();
-      console.log('Quiz evaluation response:', data);
-      
-      if (data.success && data.evaluation) {
-        // Send formatted feedback as a special message
-        const feedbackText = `QUIZ_FEEDBACK:${JSON.stringify(data.evaluation)}`;
-        onSendMessage(feedbackText);
-      }
-      
-    } catch (error) {
-      console.error('Error submitting quiz:', error);
-      onSendMessage('There was an error evaluating your quiz. Please try again.');
     }
-  };
+    
+  } catch (error) {
+    console.error('Error submitting quiz:', error);
+    onSendMessage('There was an error evaluating your quiz. Please try again.');
+  }
+};
 
   // Handle action button clicks
   const handleCopyPrompt = () => {

@@ -10,7 +10,8 @@ const ChatView = ({
   onSendMessage, 
   onOpenCodeEditor,
   splitPaneMode = false,
-  tutoringMode = false // NEW: Tutoring mode prop
+  tutoringMode = false,
+  currentChatId
 }) => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -112,15 +113,16 @@ const ChatView = ({
           )}
 
           {messages.map((message) => (
-            <Message 
-              key={message.id} 
-              message={message} 
-              onSendMessage={onSendMessage}
-              isLoading={isLoading}
-              onOpenCodeEditor={onOpenCodeEditor}
-              splitPaneMode={splitPaneMode}
-              tutoringMode={tutoringMode} // NEW: Pass tutoring mode to messages
-            />
+          <Message 
+            key={message.id} 
+            message={message} 
+            onSendMessage={onSendMessage}
+            isLoading={isLoading}
+            onOpenCodeEditor={onOpenCodeEditor}
+            splitPaneMode={splitPaneMode}
+            tutoringMode={tutoringMode}
+            currentChatId={currentChatId} // ADD THIS LINE
+          />
           ))}
           
           {isLoading && <TypingIndicator splitPaneMode={splitPaneMode} tutoringMode={tutoringMode} />}

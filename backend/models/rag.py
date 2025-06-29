@@ -84,10 +84,49 @@ class SimpleRAG:
         return results
     
     def detect_quiz_request(self, query):
-        """Detect if the user is requesting a quiz"""
-        quiz_keywords = ['quiz', 'test me', 'question me', 'practice questions', 'mcq', 'multiple choice']
-        query_lower = query.lower()
-        return any(keyword in query_lower for keyword in quiz_keywords)
+        """Detect if the user is explicitly requesting a quiz - be more specific"""
+        # Make quiz detection much more specific
+        quiz_keywords = [
+            'give me a quiz', 'can i have a quiz', 'i want a quiz', 'quiz me', 
+            'test me', 'practice questions', 'mcq', 'multiple choice questions',
+            'ready for a quiz', 'quiz please', 'start a quiz', 'quiz time',
+            'give me some questions', 'test my knowledge'
+        ]
+        
+        query_lower = query.lower().strip()
+        
+        # Check for exact phrases first
+        if any(keyword in query_lower for keyword in quiz_keywords):
+            return True
+        
+        # Check for patterns like "quiz about X" or "test on X"
+        quiz_patterns = [
+            r'\bquiz\s+about\b',
+            r'\btest\s+on\b', 
+            r'\bquiz\s+on\b',
+            r'\bquestions\s+about\b'
+        ]
+        
+        import re
+        for pattern in quiz_patterns:
+            if re.search(pattern, query_lower):
+                return True
+        
+        # Don't treat simple questions as quiz requests
+        simple_question_patterns = [
+            r'^what\s+is\b',
+            r'^how\s+do\b',
+            r'^can\s+you\s+explain\b',
+            r'^tell\s+me\s+about\b',
+            r'^why\s+is\b',
+            r'^when\s+should\b'
+        ]
+        
+        for pattern in simple_question_patterns:
+            if re.search(pattern, query_lower):
+                return False
+        
+        return False
 
     def generate_quiz_data(self, topic="CUDA programming", conversation_context=""):
         """Generate quiz data with 3 questions using default model"""
@@ -298,7 +337,7 @@ Return ONLY the JSON, no additional text:"""
         }
     
     def generate_response_with_model(self, query, conversation_context="", model_config=None, stream=False):
-        """Generate response using a specific model configuration"""
+        """Generate response using a specific model configuration with improved quiz detection"""
         
         if model_config is None:
             # Use default configuration
@@ -311,8 +350,10 @@ Return ONLY the JSON, no additional text:"""
         
         print(f"🤖 Generating response with {model_config['name']} ({model_config['ollama_model']})")
         
-        # Check if this is a quiz request
+        # FIXED: Only generate quiz if explicitly requested
         if self.detect_quiz_request(query):
+            print("🎯 Explicit quiz request detected, generating quiz...")
+            
             # Extract topic from query if specified
             topic = "CUDA programming"
             if "about" in query.lower():
@@ -320,14 +361,21 @@ Return ONLY the JSON, no additional text:"""
                 parts = query.lower().split("about")
                 if len(parts) > 1:
                     topic = parts[1].strip()[:50]  # Limit topic length
+            elif "on" in query.lower():
+                # Try to extract topic after "on"
+                parts = query.lower().split("on")
+                if len(parts) > 1:
+                    topic = parts[1].strip()[:50]
             
             # Generate quiz data using the selected model
-            quiz_data = self.generate_quiz_data_with_model(query, conversation_context, model_config)
+            quiz_data = self.generate_quiz_data_with_model(topic, conversation_context, model_config)
             
             # Return quiz as JSON string with special marker
             return "QUIZ_DATA:" + json.dumps(quiz_data)
         
-        # Regular response generation
+        # FIXED: Regular teaching/tutoring response generation
+        print("📚 Generating regular tutoring/teaching response...")
+        
         # 1. Retrieve relevant examples
         examples = self.search(query)
         
@@ -340,27 +388,54 @@ Return ONLY the JSON, no additional text:"""
         else:
             example_context = "General CUDA programming knowledge."
         
+        # 3. Enhanced prompt for tutoring mode
         if conversation_context:
-            prompt = f"""You are a helpful CUDA programming tutor using {model_config['name']}. Build on our previous conversation.
+            # Check if this is in tutoring mode based on conversation context
+            is_tutoring = "tutoring" in conversation_context.lower() or "tutor" in conversation_context.lower()
+            
+            if is_tutoring:
+                prompt = f"""You are an expert CUDA programming tutor in an interactive tutoring session. Your role is to TEACH concepts step by step, provide explanations, and guide the student's learning.
 
-Previous conversation:
-{conversation_context}
+    Previous conversation context:
+    {conversation_context}
 
-Relevant CUDA examples:
-{example_context}
+    Relevant CUDA examples and knowledge:
+    {example_context}
 
-Current question: {query}
+    Current student message: {query}
 
-Answer the current question, referencing our previous discussion when relevant. Be conversational and remember what we've discussed:"""
+    TUTORING GUIDELINES:
+    - If the student asks a question, provide a clear, educational explanation
+    - Break down complex concepts into digestible parts
+    - Use examples and analogies to help understanding
+    - After explaining a concept thoroughly, you may ask if they'd like to test their understanding with a quiz
+    - Be encouraging and patient
+    - Focus on teaching and explanation, not just giving quizzes
+    - Only offer quizzes AFTER you've taught something substantial
+
+    Respond as their tutor by explaining the concept they asked about:"""
+            else:
+                prompt = f"""You are a helpful CUDA programming assistant. Build on our previous conversation.
+
+    Previous conversation:
+    {conversation_context}
+
+    Relevant CUDA examples:
+    {example_context}
+
+    Current question: {query}
+
+    Answer the current question, referencing our previous discussion when relevant:"""
         else:
-            prompt = f"""You are a helpful CUDA programming tutor using {model_config['name']}. Answer concisely and clearly.
+            # First message or no context
+            prompt = f"""You are an expert CUDA programming tutor. Your student has asked you a question. Provide a clear, educational explanation.
 
-Relevant examples:
-{example_context}
+    Relevant examples:
+    {example_context}
 
-Student question: {query}
+    Student question: {query}
 
-Provide a helpful answer:"""
+    Provide a comprehensive teaching response that explains the concept clearly:"""
         
         # 4. Generate response using the specified model
         return self._generate_with_model(prompt, model_config, stream)

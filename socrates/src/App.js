@@ -614,59 +614,103 @@ Please type your answer (A, B, C, or D) and I'll tailor the session to your leve
     }
   };
 
-  const loadChatMessages = async (chatId) => {
-    if (!chatId) {
-      console.error("Cannot load messages: chatId is null");
-      return [];
-    }
+const loadChatMessages = async (chatId) => {
+  if (!chatId) {
+    console.error("Cannot load messages: chatId is null");
+    return [];
+  }
 
-    try {
-      console.log("Loading messages for chat:", chatId);
+  try {
+    console.log("Loading messages for chat:", chatId);
 
-      const { data, error } = await supabase
-        .from("Messages")
-        .select("*")
-        .eq("chat_id", chatId)
-        .order("order_index", { ascending: true });
+    const { data, error } = await supabase
+      .from("Messages")
+      .select("*, quiz_data")  // Include quiz_data column
+      .eq("chat_id", chatId)
+      .order("order_index", { ascending: true });
 
-      if (error) {
-        console.error("Error loading messages:", error);
-        return [];
-      }
-
-      const formattedMessages = data.map((msg) => {
-        let performanceMetrics = null;
-        
-        // Safely parse performance metrics
-        if (msg.performance_metrics) {
-          try {
-            performanceMetrics = typeof msg.performance_metrics === 'string' ? 
-              JSON.parse(msg.performance_metrics) : 
-              msg.performance_metrics;
-          } catch (e) {
-            console.log("Could not parse performance metrics for message:", msg.message_id);
-          }
-        }
-        
-        return {
-          id: `${msg.message_id}_${msg.sender}`,
-          role: msg.sender,
-          content: msg.content,
-          timestamp: msg.timestamp,
-          messageId: msg.message_id,
-          orderIndex: msg.order_index,
-          performanceMetrics: performanceMetrics,
-          tutoring: msg.sender === "assistant" && msg.content.includes("tutoring") // Mark tutoring messages
-        };
-      });
-
-      console.log("Loaded messages for chat:", chatId, formattedMessages);
-      return formattedMessages;
-    } catch (error) {
+    if (error) {
       console.error("Error loading messages:", error);
       return [];
     }
-  };
+
+    const formattedMessages = data.map((msg) => {
+      let performanceMetrics = null;
+      
+      // Safely parse performance metrics
+      if (msg.performance_metrics) {
+        try {
+          performanceMetrics = typeof msg.performance_metrics === 'string' ? 
+            JSON.parse(msg.performance_metrics) : 
+            msg.performance_metrics;
+        } catch (e) {
+          console.log("Could not parse performance metrics for message:", msg.message_id);
+        }
+      }
+
+      const baseMessage = {
+        id: `${msg.message_id}_${msg.sender}`,
+        role: msg.sender,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        messageId: msg.message_id,
+        orderIndex: msg.order_index,
+        performanceMetrics: performanceMetrics,
+        tutoring: msg.sender === "assistant" && msg.content.includes("tutoring") // Mark tutoring messages
+      };
+
+      // NEW: Check if this message has full quiz data
+      if (msg.quiz_data) {
+        try {
+          const quizEvaluation = JSON.parse(msg.quiz_data);
+          return {
+            ...baseMessage,
+            content: "", // Empty content since we're using quizEvaluation
+            quizEvaluation: quizEvaluation // This will trigger QuizFeedback component
+          };
+        } catch (e) {
+          console.log("Could not parse quiz_data for message:", msg.message_id);
+        }
+      }
+
+      // FALLBACK: Check if this is a quiz result message and reconstruct it
+      if (msg.sender === "assistant" && msg.content.startsWith("Quiz Results:")) {
+        // This is a quiz result summary - we need to reconstruct the quiz data
+        // Parse the summary: "Quiz Results: 2/3 (67%) - Good job! You scored..."
+        const summaryMatch = msg.content.match(/Quiz Results: (\d+)\/(\d+) \((\d+)%\) - (.+)/);
+        
+        if (summaryMatch) {
+          const [, score, total, percentage, overallMessage] = summaryMatch;
+          
+          // Create a reconstructed quiz evaluation
+          const reconstructedEvaluation = {
+            score: parseInt(score),
+            total: parseInt(total),
+            percentage: parseInt(percentage),
+            overall_message: overallMessage,
+            detailed_feedback: [], // We don't have the detailed feedback anymore
+            topic: "CUDA Programming", // Default topic
+            reconstructed: true // Flag to indicate this was reconstructed
+          };
+
+          return {
+            ...baseMessage,
+            content: "", // Empty content since we're using quizEvaluation
+            quizEvaluation: reconstructedEvaluation // This will trigger QuizFeedback component
+          };
+        }
+      }
+
+      return baseMessage;
+    });
+
+    console.log("Loaded messages for chat:", chatId, formattedMessages);
+    return formattedMessages;
+  } catch (error) {
+    console.error("Error loading messages:", error);
+    return [];
+  }
+};
 
   const createNewChatForMessage = async (userMessage) => {
     if (!user) {
@@ -965,190 +1009,248 @@ Please type your answer (A, B, C, or D) and I'll tailor the session to your leve
 
   // ==================== MESSAGE HANDLING FUNCTIONS ====================
 const sendMessage = async (message) => {
-    console.log("Sending message:", message, "using model:", selectedModel, "tutoring mode:", tutoringMode);
-    let chatId = currentChatId;
-    let orderIndex = messages.length;
+  console.log("Sending message:", message, "using model:", selectedModel, "tutoring mode:", tutoringMode);
+  let chatId = currentChatId;
+  let orderIndex = messages.length;
 
-    // Handle tutoring mode messages
-    if (tutoringMode && tutoringChatId) {
-      chatId = tutoringChatId;
-    }
+  // Handle tutoring mode messages
+  if (tutoringMode && tutoringChatId) {
+    chatId = tutoringChatId;
+  }
 
-    // ========== SPECIAL HANDLING FOR QUIZ FEEDBACK ==========
-    if (message.startsWith("QUIZ_FEEDBACK:")) {
-      console.log("Processing quiz feedback message");
-      const evaluationJson = message.replace("QUIZ_FEEDBACK:", "");
+  // ========== SPECIAL HANDLING FOR QUIZ FEEDBACK ==========
+  if (message.startsWith("QUIZ_FEEDBACK:")) {
+    console.log("Processing quiz feedback message");
+    const evaluationJson = message.replace("QUIZ_FEEDBACK:", "");
 
-      try {
-        const evaluation = JSON.parse(evaluationJson);
-        console.log("Parsed quiz evaluation:", evaluation);
+    try {
+      const evaluation = JSON.parse(evaluationJson);
+      console.log("Parsed quiz evaluation:", evaluation);
 
-        // Create feedback message with quizEvaluation property
-        const feedbackMessage = {
-          id: Date.now() + "_quiz_feedback",
-          role: "assistant",
-          content: "", // Empty content since we're using quizEvaluation
-          quizEvaluation: evaluation, // This will trigger QuizFeedback component
-          timestamp: new Date().toISOString(),
-          tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
-        };
+      // Create feedback message with quizEvaluation property
+      const feedbackMessage = {
+        id: Date.now() + "_quiz_feedback",
+        role: "assistant",
+        content: "", 
+        quizEvaluation: evaluation,
+        timestamp: new Date().toISOString(),
+        tutoring: tutoringMode,
+      };
 
-        // Add feedback message to chat
-        setMessages((prev) => [...prev, feedbackMessage]);
-        setIsLoading(false);
+      // Add feedback message to chat
+      setMessages((prev) => [...prev, feedbackMessage]);
+      setIsLoading(false);
 
-        // Save to database with a summary
-        if (chatId) {
+      // Save quiz feedback to database
+      if (chatId) {
+        try {
+          const quizMessageData = {
+            chat_id: chatId,
+            sender: "assistant", 
+            content: `Quiz Results: ${evaluation.score}/${evaluation.total} (${evaluation.percentage.toFixed(0)}%) - ${evaluation.overall_message}`,
+            order_index: orderIndex,
+            timestamp: new Date().toISOString(),
+            quiz_data: JSON.stringify(evaluation)
+          };
+
+          const { data, error } = await supabase
+            .from("Messages")
+            .insert([quizMessageData])
+            .select()
+            .single();
+
+          if (error) {
+            console.error("Error saving quiz message:", error);
+            await saveMessage(chatId, "assistant", quizMessageData.content, orderIndex);
+          } else {
+            console.log("Quiz message with full data saved successfully");
+          }
+        } catch (error) {
+          console.error("Error saving enhanced quiz message:", error);
           await saveMessage(
             chatId,
             "assistant",
-            `Quiz Results: ${evaluation.score}/${
-              evaluation.total
-            } (${evaluation.percentage.toFixed(0)}%) - ${
-              evaluation.overall_message
-            }`,
+            `Quiz Results: ${evaluation.score}/${evaluation.total} (${evaluation.percentage.toFixed(0)}%) - ${evaluation.overall_message}`,
             orderIndex
           );
         }
-
-        console.log("Quiz feedback message added successfully");
-        return; // Exit early for quiz feedback
-      } catch (error) {
-        console.error("Error parsing quiz feedback:", error);
-        // If parsing fails, treat as regular message
       }
+
+      console.log("Quiz feedback message added successfully");
+      return; // Exit early for quiz feedback
+    } catch (error) {
+      console.error("Error parsing quiz feedback:", error);
     }
+  }
 
-    // ========== REGULAR MESSAGE HANDLING ==========
+  // ========== NEW: SPECIAL HANDLING FOR AI ANALYSIS ==========
+  if (message.startsWith("AI_ANALYSIS:")) {
+    console.log("Processing AI analysis message");
+    const analysisContent = message.replace("AI_ANALYSIS:", "");
 
-    // Create new chat if needed (but not in tutoring mode - tutoring chat already exists)
-    if (!chatId && !tutoringMode) {
-      console.log("No current chat, creating new chat...");
-      const newChat = await createNewChatForMessage(message);
-      if (!newChat) {
-        console.error("Failed to create new chat");
-        return;
-      }
-      chatId = newChat.chat_id;
-      orderIndex = 0;
-    }
-
-    // Add user message to UI
-    const userMessage = {
-      id: Date.now() + "_user",
-      role: "user",
-      content: message,
+    // Create AI analysis message as assistant message
+    const analysisMessage = {
+      id: Date.now() + "_ai_analysis",
+      role: "assistant",
+      content: analysisContent,
       timestamp: new Date().toISOString(),
+      tutoring: tutoringMode,
+    };
+
+    // Add analysis message to chat
+    setMessages((prev) => [...prev, analysisMessage]);
+    setIsLoading(false);
+
+    // Save AI analysis to database
+    if (chatId) {
+      const savedAnalysisMessage = await saveMessage(
+        chatId,
+        "assistant",
+        analysisContent,
+        orderIndex + 1 // +1 because quiz feedback was just saved
+      );
+      if (savedAnalysisMessage) {
+        console.log("AI analysis message saved to database");
+      }
+    }
+
+    console.log("AI analysis message added successfully");
+    return; // Exit early for AI analysis
+  }
+
+  // ========== REGULAR MESSAGE HANDLING ==========
+
+  // Create new chat if needed (but not in tutoring mode - tutoring chat already exists)
+  if (!chatId && !tutoringMode) {
+    console.log("No current chat, creating new chat...");
+    const newChat = await createNewChatForMessage(message);
+    if (!newChat) {
+      console.error("Failed to create new chat");
+      return;
+    }
+    chatId = newChat.chat_id;
+    orderIndex = 0;
+  }
+
+  // Add user message to UI
+  const userMessage = {
+    id: Date.now() + "_user",
+    role: "user",
+    content: message,
+    timestamp: new Date().toISOString(),
+    tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
+  };
+
+  setMessages((prev) => [...prev, userMessage]);
+  setIsLoading(true);
+  setCurrentView("chat");
+
+  // Save user message to database
+  const savedUserMessage = await saveMessage(
+    chatId,
+    "user",
+    message,
+    orderIndex
+  );
+  if (savedUserMessage) {
+    console.log("User message saved to database");
+  }
+
+  // Update chat title if this is the first message and not in tutoring mode
+  if (orderIndex === 0 && !tutoringMode) {
+    await updateChatTitle(chatId, message);
+  }
+
+  // UPDATED: Send message to backend with chat_id for proper context and tutoring mode
+  try {
+    const requestBody = {
+      message: message,
+      session_id: sessionId,    // Keep for compatibility
+      chat_id: chatId,          // NEW: Pass actual chat_id for database context
+      module_id: selectedModuleId,
+      model: selectedModel,     // Include selected model
+      stream: false,
+      tutoring_mode: tutoringMode, // Include tutoring mode flag
+    };
+
+    console.log("Sending request to backend with chat_id and tutoring mode:", requestBody);
+
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Backend response:", data);
+
+    // Create assistant message
+    const assistantMessage = {
+      id: Date.now() + "_assistant",
+      role: "assistant",
+      content: data.response || "Sorry, I received an empty response.",
+      timestamp: new Date().toISOString(),
+      isStreaming: false,
+      performanceMetrics: data.performance_metrics || null,
+      modelUsed: data.model_used || selectedModel,
+      modelName: data.model_name || getModelDisplayName(selectedModel),
+      tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
+      contextSource: data.context_source || 'unknown', // NEW: Track context source
+    };
+
+    setMessages((prev) => [...prev, assistantMessage]);
+
+    // Log model usage and tutoring context
+    if (tutoringMode) {
+      console.log(`🎓 Tutoring response generated using ${assistantMessage.modelName} for ${MODULE_TO_COURSE[selectedModuleId] || 'module'}`);
+      console.log(`📚 Context source: ${assistantMessage.contextSource}`);
+    } else {
+      console.log(`✅ Response generated using ${assistantMessage.modelName} (${assistantMessage.modelUsed})`);
+      console.log(`📚 Context source: ${assistantMessage.contextSource}`);
+    }
+
+    // Save assistant message to database
+    const savedAssistantMessage = await saveMessage(
+      chatId,
+      "assistant",
+      assistantMessage.content,
+      orderIndex + 1,
+      assistantMessage.performanceMetrics
+    );
+    if (savedAssistantMessage) {
+      console.log("Assistant message saved to database");
+    }
+  } catch (error) {
+    console.error("Error sending message:", error);
+
+    const errorMessage = {
+      id: Date.now() + "_error",
+      role: "assistant",
+      content: `Sorry, I encountered an error: ${error.message}. Please check if the backend is running and try again.`,
+      timestamp: new Date().toISOString(),
+      isError: true,
       tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-    setCurrentView("chat");
+    setMessages((prev) => [...prev, errorMessage]);
 
-    // Save user message to database
-    const savedUserMessage = await saveMessage(
+    // Save error message to database
+    await saveMessage(
       chatId,
-      "user",
-      message,
-      orderIndex
+      "assistant",
+      errorMessage.content,
+      orderIndex + 1
     );
-    if (savedUserMessage) {
-      console.log("User message saved to database");
-    }
-
-    // Update chat title if this is the first message and not in tutoring mode
-    if (orderIndex === 0 && !tutoringMode) {
-      await updateChatTitle(chatId, message);
-    }
-
-    // Send message to backend with selected model and enhanced tutoring context
-    try {
-      const requestBody = {
-        message: message,
-        session_id: sessionId,
-        chat_id: chatId,
-        module_id: selectedModuleId,
-        model: selectedModel, // Include selected model
-        stream: false,
-        tutoring_mode: tutoringMode, // NEW: Include tutoring mode flag
-      };
-
-      console.log("Sending request to backend:", requestBody);
-
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Backend response:", data);
-
-      // Create assistant message
-      const assistantMessage = {
-        id: Date.now() + "_assistant",
-        role: "assistant",
-        content: data.response || "Sorry, I received an empty response.",
-        timestamp: new Date().toISOString(),
-        isStreaming: false,
-        performanceMetrics: data.performance_metrics || null,
-        modelUsed: data.model_used || selectedModel, // Track which model was used
-        modelName: data.model_name || getModelDisplayName(selectedModel),
-        tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      // Log model usage and tutoring context
-      if (tutoringMode) {
-        console.log(`🎓 Tutoring response generated using ${assistantMessage.modelName} for ${MODULE_TO_COURSE[selectedModuleId] || 'module'}`);
-      } else {
-        console.log(`✅ Response generated using ${assistantMessage.modelName} (${assistantMessage.modelUsed})`);
-      }
-
-      // Save assistant message to database
-      const savedAssistantMessage = await saveMessage(
-        chatId,
-        "assistant",
-        assistantMessage.content,
-        orderIndex + 1,
-        assistantMessage.performanceMetrics
-      );
-      if (savedAssistantMessage) {
-        console.log("Assistant message saved to database");
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-
-      const errorMessage = {
-        id: Date.now() + "_error",
-        role: "assistant",
-        content: `Sorry, I encountered an error: ${error.message}. Please check if the backend is running and try again.`,
-        timestamp: new Date().toISOString(),
-        isError: true,
-        tutoring: tutoringMode, // Mark as tutoring if in tutoring mode
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
-
-      // Save error message to database
-      await saveMessage(
-        chatId,
-        "assistant",
-        errorMessage.content,
-        orderIndex + 1
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // ==================== RENDER FUNCTIONS ====================
 
@@ -1254,8 +1356,9 @@ const sendMessage = async (message) => {
                   isLoading={isLoading}
                   onSendMessage={sendMessage}
                   onOpenCodeEditor={handleOpenCodeEditor}
-                  splitPaneMode={true}
-                  tutoringMode={tutoringMode} // NEW: Pass tutoring mode state
+                  splitPaneMode={splitPaneMode}
+                  tutoringMode={tutoringMode}
+                  currentChatId={currentChatId} // ADD THIS LINE
                 />
               )
             }

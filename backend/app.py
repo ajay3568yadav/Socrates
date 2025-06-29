@@ -4,12 +4,15 @@ Main Flask application for CUDA Tutor Backend
 Modular version with proper separation of concerns
 """
 
+from dotenv import load_dotenv
+load_dotenv()
 import sys
 import traceback
 import requests
 import subprocess
 import platform
 from pathlib import Path
+
 
 # Add the current directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent))

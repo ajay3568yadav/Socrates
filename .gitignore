@@ -9,3 +9,6 @@ __pycache__/
 *.pyzw
 *.pyzwz
 docs/
+.chainlit/
+.files/
+.DS_Store/

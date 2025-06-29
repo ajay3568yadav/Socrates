@@ -764,7 +764,7 @@ const CudaTutorApp = () => {
       );
       loadChats(selectedModuleId);
     }
-  }, [selectedModuleId, user]);
+  }, [selectedModuleId, user, loadChats]);
 
   // ==================== MESSAGE HANDLING FUNCTIONS ====================
 
